@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp, ActiveTab } from '../context/AppContext';
+import { TranslationKey } from '../services/translations';
 import {
   LayoutDashboard,
   Compass,
@@ -18,31 +19,33 @@ import {
   ShieldAlert,
   MoonStar,
   Presentation,
+  WifiOff,
+  Plane,
 } from 'lucide-react';
 
 interface NavItem {
   id: ActiveTab;
-  label: string;
+  translationKey: TranslationKey;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
   category?: 'core' | 'travel' | 'islamic' | 'tools';
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Home', icon: LayoutDashboard, category: 'core' },
-  { id: 'qibla', label: 'Qibla Finder', icon: Compass, category: 'islamic' },
-  { id: 'prayer', label: 'Prayer Times', icon: Clock, category: 'islamic' },
-  { id: 'mosques', label: 'Nearby Mosques', icon: Landmark, category: 'islamic' },
-  { id: 'halal-food', label: 'Halal Food', icon: UtensilsCrossed, category: 'travel' },
-  { id: 'hotels', label: 'Muslim Hotels', icon: Hotel, category: 'travel' },
-  { id: 'trips', label: 'Trip Planner', icon: Map, badge: 'AI', category: 'travel' },
-  { id: 'checklist', label: 'Packing Checklist', icon: CheckSquare, category: 'travel' },
-  { id: 'islamic-guide', label: 'Travel Duas & Salah', icon: BookOpen, category: 'islamic' },
-  { id: 'hajj-umrah', label: 'Hajj & Umrah', icon: MoonStar, badge: 'Special', category: 'islamic' },
-  { id: 'assistant', label: 'Musafir AI', icon: Bot, badge: 'Smart', category: 'tools' },
-  { id: 'expenses', label: 'Currency & Budget', icon: Coins, category: 'tools' },
-  { id: 'saved', label: 'Saved Places', icon: Bookmark, category: 'tools' },
-  { id: 'profile', label: 'Profile & Settings', icon: User, category: 'tools' },
+  { id: 'dashboard', translationKey: 'dashboard', icon: LayoutDashboard, category: 'core' },
+  { id: 'qibla', translationKey: 'qibla', icon: Compass, category: 'islamic' },
+  { id: 'prayer', translationKey: 'prayer', icon: Clock, category: 'islamic' },
+  { id: 'mosques', translationKey: 'mosques', icon: Landmark, category: 'islamic' },
+  { id: 'halal-food', translationKey: 'halalFood', icon: UtensilsCrossed, category: 'travel' },
+  { id: 'hotels', translationKey: 'hotels', icon: Hotel, category: 'travel' },
+  { id: 'trips', translationKey: 'trips', icon: Map, badge: 'AI', category: 'travel' },
+  { id: 'checklist', translationKey: 'checklist', icon: CheckSquare, category: 'travel' },
+  { id: 'islamic-guide', translationKey: 'islamicGuide', icon: BookOpen, category: 'islamic' },
+  { id: 'hajj-umrah', translationKey: 'hajjUmrah', icon: MoonStar, badge: 'Special', category: 'islamic' },
+  { id: 'assistant', translationKey: 'assistant', icon: Bot, badge: 'Smart', category: 'tools' },
+  { id: 'expenses', translationKey: 'expenses', icon: Coins, category: 'tools' },
+  { id: 'saved', translationKey: 'saved', icon: Bookmark, category: 'tools' },
+  { id: 'profile', translationKey: 'profile', icon: User, category: 'tools' },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -52,7 +55,13 @@ export const Sidebar: React.FC = () => {
     setEmergencyModalOpen,
     setPresentationModeOpen,
     offlineModeActive,
+    setOfflineRoamingModalOpen,
+    downloadedPacks,
+    language,
+    t,
   } = useApp();
+
+  const packsCount = Object.values(downloadedPacks).filter(Boolean).length;
 
   return (
     <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white dark:bg-[#0D1C18] border-r border-[#0F5C4D]/10 dark:border-[#C9A45C]/15 min-h-[calc(100vh-4rem)] p-4 select-none">
@@ -81,7 +90,7 @@ export const Sidebar: React.FC = () => {
       {/* Navigation Sections */}
       <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
         <div className="text-[10px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider px-3 mb-1">
-          Daily Faith & Qibla
+          {t('dailyFaith')}
         </div>
         {NAV_ITEMS.filter((i) => i.category === 'core' || i.category === 'islamic').map((item) => {
           const Icon = item.icon;
@@ -102,7 +111,7 @@ export const Sidebar: React.FC = () => {
                     isActive ? 'text-[#C9A45C]' : 'text-[#0F5C4D] dark:text-[#C9A45C]'
                   }`}
                 />
-                <span>{item.label}</span>
+                <span>{t(item.translationKey)}</span>
               </div>
               {item.badge && (
                 <span
@@ -120,7 +129,7 @@ export const Sidebar: React.FC = () => {
         })}
 
         <div className="text-[10px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider px-3 pt-3 mb-1">
-          Travel & Planning
+          {t('travelAndPlaces')}
         </div>
         {NAV_ITEMS.filter((i) => i.category === 'travel').map((item) => {
           const Icon = item.icon;
@@ -141,7 +150,7 @@ export const Sidebar: React.FC = () => {
                     isActive ? 'text-[#C9A45C]' : 'text-[#0F5C4D] dark:text-[#C9A45C]'
                   }`}
                 />
-                <span>{item.label}</span>
+                <span>{t(item.translationKey)}</span>
               </div>
               {item.badge && (
                 <span
@@ -159,7 +168,7 @@ export const Sidebar: React.FC = () => {
         })}
 
         <div className="text-[10px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider px-3 pt-3 mb-1">
-          Companion Tools
+          {t('companionTools')}
         </div>
         {NAV_ITEMS.filter((i) => i.category === 'tools').map((item) => {
           const Icon = item.icon;
@@ -180,7 +189,7 @@ export const Sidebar: React.FC = () => {
                     isActive ? 'text-[#C9A45C]' : 'text-[#0F5C4D] dark:text-[#C9A45C]'
                   }`}
                 />
-                <span>{item.label}</span>
+                <span>{t(item.translationKey)}</span>
               </div>
               {item.badge && (
                 <span
@@ -198,14 +207,54 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Floating Emergency SOS Box */}
-      <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+      {/* Offline Roaming Hub CTA */}
+      <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
+        <button
+          onClick={() => setOfflineRoamingModalOpen(true)}
+          className={`w-full p-2.5 rounded-2xl border text-left flex items-center justify-between transition-all group ${
+            offlineModeActive
+              ? 'bg-amber-500/15 border-amber-500/40 text-amber-900 dark:text-amber-100 shadow-xs'
+              : 'bg-[#F7F5EF] dark:bg-[#071310] border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 hover:border-[#0F5C4D]/40'
+          }`}
+          title="Manage Offline Roaming City Packs & Data"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
+                offlineModeActive
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'bg-[#0F5C4D]/10 dark:bg-[#C9A45C]/15 text-[#0F5C4D] dark:text-[#C9A45C]'
+              }`}
+            >
+              {offlineModeActive ? <WifiOff className="w-3.5 h-3.5" /> : <Plane className="w-3.5 h-3.5" />}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] font-extrabold truncate text-gray-900 dark:text-gray-100">
+                {language === 'ml' ? 'ഓഫ്‌ലൈൻ റോമിംഗ്' : language === 'ar' ? 'التجوال أوفلاين' : 'Offline Roaming'}
+              </div>
+              <div className="text-[10px] text-[#6B756F] dark:text-[#9AA9A2] truncate">
+                {packsCount} {language === 'ml' ? 'പാക്കുകൾ കാഷിൽ' : language === 'ar' ? 'حزم محفوظة' : 'Packs Active'}
+              </div>
+            </div>
+          </div>
+          <span
+            className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md shrink-0 ${
+              offlineModeActive
+                ? 'bg-amber-500 text-white'
+                : 'bg-[#0F5C4D]/10 dark:bg-[#C9A45C]/20 text-[#0F5C4D] dark:text-[#C9A45C]'
+            }`}
+          >
+            {offlineModeActive ? 'ON' : 'SYNC'}
+          </span>
+        </button>
+
+        {/* Floating Emergency SOS Box */}
         <button
           onClick={() => setEmergencyModalOpen(true)}
           className="w-full px-3 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 active:scale-98 transition-all"
         >
           <ShieldAlert className="w-4 h-4 animate-pulse" />
-          <span>Emergency Assistance</span>
+          <span>{t('sos')}</span>
         </button>
       </div>
     </aside>

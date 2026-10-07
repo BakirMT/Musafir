@@ -38,6 +38,7 @@ export const ProfileView: React.FC = () => {
     setActiveTab,
     offlineModeActive,
     setOfflineModeActive,
+    t,
   } = useApp();
 
   const [editName, setEditName] = useState(false);
@@ -65,7 +66,7 @@ export const ProfileView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header Profile Card */}
       <div className="p-6 rounded-3xl bg-gradient-to-r from-[#0F5C4D] via-[#0b483c] to-[#083C34] text-white shadow-xl shadow-[#0F5C4D]/25 flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left relative overflow-hidden">
         <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C9A45C] to-[#E8DCC2] text-[#071310] flex items-center justify-center font-black text-2xl shadow-lg border-4 border-white/20 shrink-0">
@@ -187,12 +188,47 @@ export const ProfileView: React.FC = () => {
           {/* Interface Language */}
           <div>
             <label className="block font-bold text-gray-700 dark:text-gray-300 mb-1">
-              App Language & Script
+              {t('language')} & Script
             </label>
+            <div className="grid grid-cols-3 gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border ${
+                  language === 'en'
+                    ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-sm'
+                    : 'bg-gray-50 dark:bg-[#071310] border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('ml')}
+                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border ${
+                  language === 'ml'
+                    ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-sm'
+                    : 'bg-gray-50 dark:bg-[#071310] border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                മലയാളം
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('ar')}
+                className={`py-2 px-2 rounded-xl text-xs font-bold font-arabic transition-all border ${
+                  language === 'ar'
+                    ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-sm'
+                    : 'bg-gray-50 dark:bg-[#071310] border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                العربية
+              </button>
+            </div>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as Language)}
-              className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-[#071310] border border-gray-200 dark:border-gray-800 font-semibold"
+              className="w-full px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-[#071310] border border-gray-200 dark:border-gray-800 font-semibold text-xs"
             >
               <option value="en">English (Default)</option>
               <option value="ml">മലയാളം (Malayalam)</option>
@@ -206,15 +242,64 @@ export const ProfileView: React.FC = () => {
       <div className="rounded-3xl p-6 bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
         <h3 className="text-sm font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Moon className="w-4 h-4 text-[#C9A45C]" />
-          <span>App Controls & Data Mode</span>
+          <span>{t('theme')} & Data Mode</span>
         </h3>
+
+        {/* Visual Theme Selection Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => setDarkMode(false)}
+            className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+              !darkMode
+                ? 'bg-amber-500/10 border-[#0F5C4D] ring-2 ring-[#0F5C4D]/20 shadow-sm'
+                : 'bg-gray-50 dark:bg-[#071310] border-gray-200 dark:border-gray-800 hover:border-gray-300'
+            }`}
+          >
+            <div className={`p-2 rounded-xl shrink-0 ${!darkMode ? 'bg-[#0F5C4D] text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-600'}`}>
+              <Sun className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-extrabold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                <span>{t('whiteTheme')}</span>
+                {!darkMode && <span className="text-[10px] font-black uppercase text-[#0F5C4D] bg-[#0F5C4D]/15 px-1.5 py-0.5 rounded">Active</span>}
+              </div>
+              <p className="text-[11px] text-[#6B756F] dark:text-[#9AA9A2] mt-0.5">
+                Crisp light surfaces with emerald & gold accents. Perfect for bright sunlight.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setDarkMode(true)}
+            className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 ${
+              darkMode
+                ? 'bg-[#0F5C4D]/15 border-[#C9A45C] ring-2 ring-[#C9A45C]/30 shadow-sm'
+                : 'bg-gray-50 dark:bg-[#071310] border-gray-200 dark:border-gray-800 hover:border-gray-300'
+            }`}
+          >
+            <div className={`p-2 rounded-xl shrink-0 ${darkMode ? 'bg-[#0F5C4D] text-[#C9A45C]' : 'bg-gray-200 dark:bg-gray-800 text-gray-600'}`}>
+              <Moon className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-extrabold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+                <span>{t('darkTheme')}</span>
+                {darkMode && <span className="text-[10px] font-black uppercase text-[#C9A45C] bg-[#C9A45C]/20 px-1.5 py-0.5 rounded">Active</span>}
+              </div>
+              <p className="text-[11px] text-[#6B756F] dark:text-[#9AA9A2] mt-0.5">
+                Deep charcoal and nighttime palette. Gentle on eyes and saves battery.
+              </p>
+            </div>
+          </button>
+        </div>
 
         <div className="divide-y divide-gray-100 dark:divide-gray-800 text-xs">
           <div className="py-3 flex items-center justify-between">
             <div>
-              <div className="font-bold text-gray-900 dark:text-gray-100">Dark Mode</div>
+              <div className="font-bold text-gray-900 dark:text-gray-100">Dark / White Theme Switch</div>
               <div className="text-[#6B756F] dark:text-[#9AA9A2]">
-                Deep charcoal and forest emerald theme
+                {darkMode ? 'Currently using Dark Theme' : 'Currently using White Theme'}
               </div>
             </div>
             <button

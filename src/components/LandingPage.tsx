@@ -22,7 +22,7 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#F7F5EF] dark:bg-[#071310] text-[#17211E] dark:text-[#F4F1E8] transition-colors overflow-hidden">
       {/* Hero Section */}
-      <section className="relative pt-20 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section className="relative pt-20 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
         {/* Subtle Islamic Geometric Pattern Background Accent */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-[#0F5C4D]/10 via-[#C9A45C]/15 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
 

@@ -81,7 +81,15 @@ export interface ChecklistItem {
 
 export interface DuaItem {
   id: string;
-  category: 'Before Journey' | 'Boarding Transport' | 'Entering a City' | 'Returning Home' | 'Traveller Salah' | 'General Travel';
+  category:
+    | 'Before Journey'
+    | 'Boarding Transport'
+    | 'En Route'
+    | 'Entering a City'
+    | 'Farewell & Family'
+    | 'Returning Home'
+    | 'Traveller Salah'
+    | 'General Travel';
   title: string;
   arabic: string;
   transliteration: string;
@@ -93,11 +101,15 @@ export interface DuaItem {
 
 export interface TripActivity {
   id: string;
-  timeSlot: 'morning' | 'afternoon' | 'evening';
+  timeSlot: 'morning' | 'afternoon' | 'evening' | 'night';
   activity: string;
   prayerNote: string;
   halalFoodSpot?: string;
   locationName?: string;
+  completed?: boolean;
+  estimatedCost?: string;
+  mosqueName?: string;
+  fiqhNote?: string;
 }
 
 export interface TripDay {
@@ -105,12 +117,15 @@ export interface TripDay {
   title: string;
   activities: TripActivity[];
   notes?: string;
+  theme?: string;
+  fiqhGuidance?: string;
 }
 
 export interface Trip {
   id: string;
   title: string;
   destination: string;
+  country?: string;
   startDate: string;
   endDate: string;
   budgetTotal: number;
@@ -118,6 +133,10 @@ export interface Trip {
   days: TripDay[];
   notes: string;
   downloadedOffline: boolean;
+  summary?: string;
+  travelStyle?: string;
+  islamicHighlights?: string[];
+  language?: Language;
 }
 
 export interface ExpenseItem {
@@ -158,4 +177,20 @@ export interface CommunityContribution {
   halalVerification?: HalalVerificationLevel;
   status: 'pending' | 'verified' | 'rejected';
   submittedAt: string;
+}
+
+export interface OfflineCityPack {
+  id: string;
+  cityName: string;
+  country: string;
+  sizeMB: number;
+  mosquesCount: number;
+  halalSpotsCount: number;
+  prayerCalculationsDays: number;
+  hasDuas: boolean;
+  hasScholarGuide: boolean;
+  hasOfflineMapTiles: boolean;
+  downloadedAt?: string;
+  isDownloaded?: boolean;
+  isCustom?: boolean;
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { WeatherWidget } from '../components/WeatherWidget';
 import { InteractiveMap } from '../components/InteractiveMap';
-import { getCompassCardinalDirection } from '../services/qiblaService';
+import { KaabaLogo } from '../components/KaabaLogo';
 import {
   Compass,
   Clock,
@@ -20,6 +20,10 @@ import {
   Sparkles,
   WifiOff,
   Crosshair,
+  Bot,
+  BookOpen,
+  Plane,
+  Download,
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
@@ -38,6 +42,10 @@ export const DashboardView: React.FC = () => {
     toggleSavePlace,
     isPlaceSaved,
     offlineModeActive,
+    setOfflineRoamingModalOpen,
+    downloadedPacks,
+    language,
+    t,
   } = useApp();
 
   // Highlight next prayer progress percentage: 0 to 100
@@ -92,7 +100,7 @@ export const DashboardView: React.FC = () => {
   ).slice(0, 2);
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Offline Mode Banner if active */}
       {offlineModeActive && (
         <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-800 dark:text-amber-300">
@@ -129,37 +137,37 @@ export const DashboardView: React.FC = () => {
       </div>
 
       {/* Dual Hero Cards: Next Prayer & Qibla Direction */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
         {/* Card 1: Next Prayer Hero */}
-        <div className="rounded-3xl p-6 bg-gradient-to-br from-[#0F5C4D] to-[#083C34] text-white shadow-xl shadow-[#0F5C4D]/25 relative overflow-hidden flex flex-col justify-between">
+        <div className="rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 bg-gradient-to-br from-[#0F5C4D] to-[#083C34] text-white shadow-xl shadow-[#0F5C4D]/25 relative overflow-hidden flex flex-col justify-between">
           {/* Subtle Arabesque Background Overlay */}
-          <div className="absolute right-0 top-0 bottom-0 w-44 bg-islamic-pattern opacity-15 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-32 sm:w-44 bg-islamic-pattern opacity-15 pointer-events-none" />
 
           <div>
-            <div className="flex items-center justify-between text-xs font-bold text-[#E8DCC2] tracking-wider uppercase mb-3">
+            <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold text-[#E8DCC2] tracking-wider uppercase mb-1.5 sm:mb-3">
               <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-[#C9A45C]" /> NEXT PRAYER
+                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#C9A45C]" /> {t('nextPrayer').toUpperCase()}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-white/15 text-[10px] font-semibold">
+              <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-white/15 text-[9px] sm:text-[10px] font-semibold">
                 {prayerTimes.hijriDate}
               </span>
             </div>
 
-            <div className="flex items-baseline justify-between mt-1">
+            <div className="flex items-baseline justify-between mt-0.5 sm:mt-1">
               <div>
-                <h2 className="text-4xl sm:text-5xl font-black tracking-tight text-white">
-                  {prayerTimes.nextPrayer}
+                <h2 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white leading-tight">
+                  {(t(prayerTimes.nextPrayer.toLowerCase() as any) as string) || prayerTimes.nextPrayer}
                 </h2>
-                <div className="text-2xl sm:text-3xl font-bold text-[#C9A45C] mt-1 font-mono">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-[#C9A45C] mt-0.5 sm:mt-1 font-mono">
                   {prayerTimes.nextPrayerTime}
                 </div>
               </div>
 
               <div className="text-right">
-                <div className="text-xs font-semibold text-white/90">
+                <div className="text-[11px] sm:text-xs font-semibold text-white/90">
                   {prayerTimes.remainingFormatted}
                 </div>
-                <div className="text-[10px] text-white/70 mt-0.5">
+                <div className="text-[9px] sm:text-[10px] text-white/70 mt-0.5">
                   Method: {prayerTimes.methodName.split(' ')[0]}
                 </div>
               </div>
@@ -167,89 +175,122 @@ export const DashboardView: React.FC = () => {
           </div>
 
           {/* Progress Bar */}
-          <div className="mt-6 pt-4 border-t border-white/15">
-            <div className="flex items-center justify-between text-[11px] text-white/80 mb-1.5 font-medium">
-              <span>Approaching prayer time</span>
-              <span>{prayerTimes.remainingMinutes}m remaining</span>
+          <div className="mt-2.5 sm:mt-6 pt-2 sm:pt-4 border-t border-white/15">
+            <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-white/80 mb-1 sm:mb-1.5 font-medium">
+              <span>{t('timeRemaining')}</span>
+              <span>{prayerTimes.remainingMinutes}m</span>
             </div>
-            <div className="w-full h-2 rounded-full bg-black/20 overflow-hidden">
+            <div className="w-full h-1.5 sm:h-2 rounded-full bg-black/20 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-[#C9A45C] to-emerald-300 rounded-full transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <div className="mt-3 flex items-center justify-between">
+            <div className="mt-2 sm:mt-3 flex items-center justify-between">
               <button
+                type="button"
                 onClick={() => setActiveTab('prayer')}
-                className="text-xs font-bold text-[#C9A45C] hover:text-white flex items-center gap-1 transition-colors"
+                className="text-[11px] sm:text-xs font-bold text-[#C9A45C] hover:text-white flex items-center gap-1 transition-colors py-0.5"
               >
-                <span>View Full Prayer Schedule</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>{t('prayer')}</span>
+                <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               </button>
             </div>
           </div>
         </div>
 
         {/* Card 2: Qibla Finder Hero */}
-        <div className="rounded-3xl p-6 bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-sm flex flex-col justify-between relative overflow-hidden">
+        <div
+          onClick={() => setActiveTab('qibla')}
+          className="rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-sm flex flex-col justify-between relative overflow-hidden cursor-pointer hover:border-[#0F5C4D]/40 dark:hover:border-[#C9A45C]/50 transition-all group"
+          title="Click to open full-screen Qibla Finder"
+        >
           <div>
-            <div className="flex items-center justify-between text-xs font-bold text-[#6B756F] dark:text-[#9AA9A2] tracking-wider uppercase mb-3">
+            <div className="flex items-center justify-between text-[10px] sm:text-xs font-bold text-[#6B756F] dark:text-[#9AA9A2] tracking-wider uppercase mb-1.5 sm:mb-3">
               <span className="flex items-center gap-1.5 text-[#0F5C4D] dark:text-[#C9A45C]">
-                <Compass className="w-4 h-4" /> QIBLA COMPASS
+                <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t('qibla').toUpperCase()}
               </span>
-              <span className="text-[11px] font-semibold text-[#0F5C4D] dark:text-[#C9A45C]">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-[#0F5C4D] dark:text-[#C9A45C]">
                 Kaaba: Makkah
               </span>
             </div>
 
-            <div className="flex items-center justify-between mt-2">
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <div className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-gray-100 font-mono">
-                    {qiblaDirection}°
-                  </div>
-                  <span className="text-sm font-bold text-[#0F5C4D] dark:text-[#C9A45C] bg-[#0F5C4D]/10 dark:bg-[#C9A45C]/15 px-2 py-0.5 rounded-md">
-                    {getCompassCardinalDirection(qiblaDirection)}
-                  </span>
+            <div className="flex items-center justify-between mt-1 sm:mt-2 gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="text-2xl sm:text-4xl md:text-5xl font-black text-gray-900 dark:text-gray-100 font-mono leading-tight">
+                  {qiblaDirection}°
                 </div>
-                <p className="text-xs text-[#6B756F] dark:text-[#9AA9A2] mt-1 font-medium">
+                <p className="text-[10px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2] mt-0.5 sm:mt-1 font-medium leading-snug">
                   Bearing from {currentLocation.city} • <strong className="text-gray-800 dark:text-gray-200">{distanceToKaaba.toLocaleString()} km</strong> to Makkah
                 </p>
               </div>
 
-              {/* Minimal Animated Compass Dial Preview */}
-              <div
-                onClick={() => setActiveTab('qibla')}
-                title="Click to open full-screen Qibla Finder"
-                className="w-20 h-20 rounded-full border-4 border-[#0F5C4D]/20 dark:border-[#C9A45C]/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition-transform bg-[#F7F5EF] dark:bg-[#071310] shadow-inner"
+              {/* Ka'ba Logo Button */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveTab('qibla');
+                }}
+                className="w-12 h-12 sm:w-20 sm:h-20 rounded-xl sm:rounded-2xl border-2 border-[#C9A45C]/30 hover:border-[#C9A45C] bg-[#F7F5EF] dark:bg-[#071310] flex items-center justify-center relative group-hover:scale-105 transition-transform shadow-inner cursor-pointer shrink-0"
+                title="Holy Kaaba • Open Qibla Compass"
+                aria-label="Holy Kaaba - Open Qibla Compass"
               >
-                <div
-                  className="w-1.5 h-10 bg-[#0F5C4D] dark:bg-[#C9A45C] rounded-full transform origin-bottom transition-transform duration-700 shadow-sm"
-                  style={{ transform: `rotate(${qiblaDirection}deg)` }}
-                />
-                <span className="absolute top-1 text-[8px] font-black text-red-600">N</span>
-              </div>
+                <KaabaLogo className="w-8 h-8 sm:w-14 sm:h-14" />
+              </button>
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
-            <button
-              onClick={requestRealLocation}
-              disabled={locationLoading}
-              className="text-xs text-[#0F5C4D] dark:text-[#C9A45C] hover:underline font-bold flex items-center gap-1 disabled:opacity-50"
-            >
-              <Navigation className={`w-3.5 h-3.5 ${locationLoading ? 'animate-spin' : ''}`} />
-              <span>{locationLoading ? 'Acquiring...' : 'Use Current GPS'}</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('qibla')}
-              className="px-5 py-2.5 rounded-2xl bg-[#0F5C4D] hover:bg-[#083C34] text-white text-xs font-bold shadow-md shadow-[#0F5C4D]/25 flex items-center gap-1.5 active:scale-95 transition-all"
-            >
-              <Compass className="w-4 h-4 text-[#C9A45C]" />
-              <span>Open Qibla Finder</span>
-            </button>
+          <div className="mt-2.5 sm:mt-6 pt-2 sm:pt-4 border-t border-gray-100 dark:border-gray-800/80 flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-bold text-[#0F5C4D] dark:text-[#C9A45C] group-hover:underline flex items-center gap-1 py-0.5">
+              <span>Open Qibla Direction</span>
+              <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            </span>
+            <span className="text-[9px] sm:text-[10px] text-[#6B756F] dark:text-[#9AA9A2] font-semibold">
+              Live Sensor
+            </span>
           </div>
         </div>
+      </div>
+
+      {/* Musafir AI Traveling Mas'ala Assistant Banner */}
+      <div
+        onClick={() => setActiveTab('assistant')}
+        className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#0F5C4D]/10 via-[#0F5C4D]/5 to-[#C9A45C]/15 border border-[#0F5C4D]/25 dark:border-[#C9A45C]/35 shadow-sm hover:border-[#0F5C4D]/50 transition-all cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#0F5C4D] text-[#C9A45C] flex items-center justify-center shrink-0 shadow-md shadow-[#0F5C4D]/20 group-hover:scale-105 transition-transform">
+            <Bot className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#C9A45C]/20 text-[#0F5C4D] dark:text-[#C9A45C] border border-[#C9A45C]/35">
+                MUSAFIR AI SCHOLAR
+              </span>
+              <span className="text-[10px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2] font-semibold">
+                Shafi'i Fiqh Engine • Fath al-Mu'in & Kanz al-Raghibin
+              </span>
+            </div>
+            <h4 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-gray-100 mt-0.5">
+              Travelling Mas'ala Assistant (English • മലയാളം • العربية)
+            </h4>
+            <p className="text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2]">
+              Instant rulings for Qasr, Jam', praying in planes & trains, stay duration (4 days), and travel fasting.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveTab('assistant');
+          }}
+          className="px-4 py-2 rounded-xl bg-[#0F5C4D] hover:bg-[#083C34] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#0F5C4D]/25 transition-all self-end sm:self-auto shrink-0"
+        >
+          <span>Ask Mas'ala</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Quick Actions (Requirement 8) */}
@@ -257,7 +298,7 @@ export const DashboardView: React.FC = () => {
         <h3 className="text-xs uppercase font-extrabold tracking-wider text-[#6B756F] dark:text-[#9AA9A2] mb-3">
           Quick Travel Actions
         </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           <button
             onClick={() => setActiveTab('qibla')}
             className="p-4 rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 hover:border-[#0F5C4D] dark:hover:border-[#C9A45C] shadow-sm hover:shadow-md transition-all text-left group"
@@ -314,6 +355,34 @@ export const DashboardView: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setOfflineRoamingModalOpen(true)}
+            className={`p-4 rounded-2xl border shadow-sm hover:shadow-md transition-all text-left group ${
+              offlineModeActive
+                ? 'bg-amber-500/15 border-amber-500/50 text-amber-900 dark:text-amber-100'
+                : 'bg-white dark:bg-[#0D1C18] border-gray-200 dark:border-gray-800 hover:border-amber-500'
+            }`}
+          >
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform ${
+                offlineModeActive
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-[#C9A45C]'
+              }`}
+            >
+              {offlineModeActive ? <WifiOff className="w-5 h-5" /> : <Plane className="w-5 h-5" />}
+            </div>
+            <div className="text-xs font-bold text-gray-900 dark:text-gray-100 flex items-center justify-between">
+              <span>Offline Mode</span>
+              {offlineModeActive && (
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              )}
+            </div>
+            <div className="text-[10px] text-[#6B756F] dark:text-[#9AA9A2]">
+              {offlineModeActive ? 'Zero-data active' : 'Packs & Roaming'}
+            </div>
+          </button>
+
+          <button
             onClick={() => setEmergencyModalOpen(true)}
             className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 hover:border-red-500 shadow-sm hover:shadow-md transition-all text-left group"
           >
@@ -353,13 +422,22 @@ export const DashboardView: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setActiveTab('trips')}
-          className="px-4 py-2.5 rounded-2xl bg-[#0F5C4D] hover:bg-[#083C34] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#0F5C4D]/25 transition-all"
-        >
-          <span>Open Trip Dashboard</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('trips')}
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#0F5C4D] to-[#C9A45C] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#0F5C4D]/25 transition-all hover:scale-105 active:scale-95"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#F2D785]" />
+            <span>AI Itinerary Planner</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('trips')}
+            className="px-3 py-2.5 rounded-2xl bg-white dark:bg-[#071310] border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 text-xs font-bold flex items-center gap-1 shadow-sm hover:bg-gray-50 transition-all"
+          >
+            <span>View Days</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {/* Near You Section (Requirement 9) */}

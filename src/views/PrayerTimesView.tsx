@@ -29,6 +29,7 @@ export const PrayerTimesView: React.FC = () => {
     setMadhhab,
     use24Hour,
     setUse24Hour,
+    t,
   } = useApp();
 
   const [notificationEnabled, setNotificationEnabled] = useState(true);
@@ -86,7 +87,7 @@ export const PrayerTimesView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200">
+    <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -137,11 +138,11 @@ export const PrayerTimesView: React.FC = () => {
 
         <div>
           <span className="text-xs font-bold text-[#E8DCC2] uppercase tracking-wider">
-            UPCOMING PRAYER
+            {t('nextPrayer').toUpperCase()}
           </span>
           <div className="flex items-baseline gap-3 mt-1">
             <h2 className="text-3xl sm:text-4xl font-black text-white">
-              {prayerTimes.nextPrayer}
+              {(t(prayerTimes.nextPrayer.toLowerCase() as any) as string) || prayerTimes.nextPrayer}
             </h2>
             <span className="text-2xl sm:text-3xl font-extrabold text-[#C9A45C] font-mono">
               {prayerTimes.nextPrayerTime}
@@ -259,7 +260,7 @@ export const PrayerTimesView: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="text-sm font-extrabold text-gray-900 dark:text-gray-100">
-                      {item.name}
+                      {(t(item.name.toLowerCase() as any) as string) || item.name}
                     </h3>
                     <span className="text-[10px] text-[#6B756F] dark:text-[#9AA9A2]">
                       {item.desc}
@@ -269,7 +270,7 @@ export const PrayerTimesView: React.FC = () => {
 
                 {isNext && (
                   <span className="px-2 py-0.5 rounded-full bg-[#0F5C4D] text-white text-[9px] font-black uppercase tracking-wider">
-                    NEXT
+                    {t('nextPrayer').toUpperCase()}
                   </span>
                 )}
               </div>

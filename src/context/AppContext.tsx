@@ -15,6 +15,8 @@ import { calculatePrayerTimes } from '../services/prayerService';
 import { calculateDistanceToKaaba, calculateQiblaDirection } from '../services/qiblaService';
 import { INITIAL_PLACES } from '../services/placesData';
 import { DEFAULT_CHECKLIST, DEMO_TRIP, KERALA_TRIP, INITIAL_EXPENSES } from '../services/travelDefaults';
+import { TranslationKey, getTranslation } from '../services/translations';
+import { bundleCityForOffline } from '../services/offlineService';
 
 export type ActiveTab =
   | 'landing'
@@ -78,6 +80,7 @@ interface AppContextType {
   setDarkMode: (dark: boolean) => void;
   language: Language;
   setLanguage: (lang: Language) => void;
+  t: (key: TranslationKey) => string;
   currentLocation: LocationInfo;
   setCurrentLocation: (loc: LocationInfo) => void;
   requestRealLocation: () => Promise<boolean>;
@@ -134,7 +137,14 @@ interface AppContextType {
   setPresentationModeOpen: (open: boolean) => void;
   offlineModeActive: boolean;
   setOfflineModeActive: (active: boolean) => void;
+  offlineRoamingModalOpen: boolean;
+  setOfflineRoamingModalOpen: (open: boolean) => void;
+  downloadedPacks: Record<string, boolean>;
+  downloadCityPack: (packId: string, cityName: string) => Promise<boolean>;
+  deleteCityPack: (packId: string, cityName: string) => void;
   downloadTripOffline: () => void;
+  mobileMenuOpen: boolean;
+  setMobileMenuOpen: (open: boolean) => void;
 
   // User Profile
   userName: string;
@@ -147,11 +157,19 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [darkMode, setDarkMode] = useState<boolean>(() => {
-    return localStorage.getItem('musafir_theme') === 'dark';
+    const saved = localStorage.getItem('musafir_theme');
+    if (saved === 'dark') return true;
+    if (saved === 'light') return false;
+    return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [language, setLanguage] = useState<Language>(() => {
-    return (localStorage.getItem('musafir_lang') as Language) || 'en';
+    const saved = localStorage.getItem('musafir_lang') as Language;
+    return saved === 'ar' || saved === 'ml' || saved === 'en' ? saved : 'en';
   });
+
+  const t = (key: TranslationKey): string => {
+    return getTranslation(key, language);
+  };
 
   const [currentLocation, setCurrentLocation] = useState<LocationInfo>(() => {
     const saved = localStorage.getItem('musafir_loc');
@@ -208,9 +226,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [addPlaceModalOpen, setAddPlaceModalOpen] = useState(false);
   const [presentationModeOpen, setPresentationModeOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [offlineModeActive, setOfflineModeActive] = useState(() => {
     return localStorage.getItem('musafir_offline') === 'true';
   });
+  const [offlineRoamingModalOpen, setOfflineRoamingModalOpen] = useState(false);
+  const [downloadedPacks, setDownloadedPacks] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('musafir_downloaded_packs');
+    return saved ? JSON.parse(saved) : { 'pack-makkah-madinah': true, 'pack-istanbul': true };
+  });
+
+  const downloadCityPack = async (packId: string, cityName: string): Promise<boolean> => {
+    bundleCityForOffline(cityName, places);
+    setDownloadedPacks((prev) => {
+      const updated = { ...prev, [packId]: true };
+      localStorage.setItem('musafir_downloaded_packs', JSON.stringify(updated));
+      return updated;
+    });
+    return true;
+  };
+
+  const deleteCityPack = (packId: string, cityName: string) => {
+    localStorage.removeItem(`musafir_offline_pack_${cityName}`);
+    setDownloadedPacks((prev) => {
+      const updated = { ...prev };
+      delete updated[packId];
+      localStorage.setItem('musafir_downloaded_packs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Listen to network status changes
+  useEffect(() => {
+    const handleOffline = () => {
+      setOfflineModeActive(true);
+      localStorage.setItem('musafir_offline', 'true');
+    };
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const [userName, setUserName] = useState('Bakir');
   const userEmail = 'bakirmannarkkad170@gmail.com';
@@ -219,15 +275,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
       localStorage.setItem('musafir_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
       localStorage.setItem('musafir_theme', 'light');
     }
   }, [darkMode]);
 
   useEffect(() => {
     localStorage.setItem('musafir_lang', language);
+    document.documentElement.setAttribute('lang', language);
     if (language === 'ar') {
       document.documentElement.setAttribute('dir', 'rtl');
     } else {
@@ -442,6 +501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setDarkMode,
         language,
         setLanguage,
+        t,
         currentLocation,
         setCurrentLocation,
         requestRealLocation,
@@ -497,8 +557,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAddPlaceModalOpen,
         presentationModeOpen,
         setPresentationModeOpen,
+        mobileMenuOpen,
+        setMobileMenuOpen,
         offlineModeActive,
         setOfflineModeActive,
+        offlineRoamingModalOpen,
+        setOfflineRoamingModalOpen,
+        downloadedPacks,
+        downloadCityPack,
+        deleteCityPack,
         downloadTripOffline,
 
         userName,

@@ -8,6 +8,9 @@ import { EmergencyModal } from './components/EmergencyModal';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { AddPlaceModal } from './components/AddPlaceModal';
 import { PresentationMode } from './components/PresentationMode';
+import { MobileDrawer } from './components/MobileDrawer';
+import { OfflineRoamingModal } from './components/OfflineRoamingModal';
+import { OfflineRoamingBanner } from './components/OfflineRoamingBanner';
 
 // Views
 import { DashboardView } from './views/DashboardView';
@@ -31,13 +34,16 @@ const MainContent: React.FC = () => {
 
   if (activeTab === 'landing') {
     return (
-      <div className="min-h-screen bg-[#F7F5EF] dark:bg-[#071310]">
+      <div className="min-h-screen bg-[#F7F5EF] dark:bg-[#071310] overflow-x-hidden w-full max-w-full">
+        <OfflineRoamingBanner />
         <Navbar />
         <LandingPage />
+        <MobileDrawer />
         <EmergencyModal />
         <GlobalSearchModal />
         <AddPlaceModal />
         <PresentationMode />
+        <OfflineRoamingModal />
       </div>
     );
   }
@@ -80,22 +86,23 @@ const MainContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F5EF] dark:bg-[#071310] text-[#17211E] dark:text-[#F4F1E8] transition-colors">
+    <div className="min-h-screen flex flex-col bg-[#F7F5EF] dark:bg-[#071310] text-[#17211E] dark:text-[#F4F1E8] transition-colors overflow-x-hidden w-full max-w-full">
+      <OfflineRoamingBanner />
       <Navbar />
 
-      <div className="flex-1 max-w-7xl w-full mx-auto flex">
+      <div className="flex-1 max-w-7xl w-full mx-auto flex overflow-x-hidden max-w-full">
         {/* Desktop Sidebar Navigation */}
         <Sidebar />
 
-        {/* Dynamic View Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto min-w-0">
+        {/* Dynamic View Body with safe bottom padding for mobile navigation */}
+        <main className="flex-1 p-3 sm:p-5 lg:p-8 pb-24 md:pb-8 overflow-y-auto overflow-x-hidden min-w-0 w-full max-w-full">
           {renderCurrentView()}
         </main>
       </div>
 
       {/* Global App Footer */}
-      <footer className="hidden md:block py-6 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-[#6B756F] dark:text-[#9AA9A2]">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="hidden md:block py-6 border-t border-gray-200 dark:border-gray-800 text-center text-xs text-[#6B756F] dark:text-[#9AA9A2] w-full max-w-full overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 w-full max-w-full">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-[#0F5C4D] dark:text-[#E8DCC2]">MUSAFIR</span>
             <span>•</span>
@@ -129,11 +136,15 @@ const MainContent: React.FC = () => {
       {/* Mobile Bottom Navigation */}
       <MobileNav />
 
+      {/* Mobile Slide-Over Menu Drawer */}
+      <MobileDrawer />
+
       {/* Global Modals */}
       <EmergencyModal />
       <GlobalSearchModal />
       <AddPlaceModal />
       <PresentationMode />
+      <OfflineRoamingModal />
     </div>
   );
 };

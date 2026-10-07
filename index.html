@@ -1,8 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-[#F7F5EF] dark:bg-[#071310] overflow-x-hidden">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script>
+      (function() {
+        try {
+          var theme = localStorage.getItem('musafir_theme');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+          var lang = localStorage.getItem('musafir_lang');
+          if (lang === 'ar') {
+            document.documentElement.setAttribute('dir', 'rtl');
+            document.documentElement.setAttribute('lang', 'ar');
+          } else if (lang === 'ml') {
+            document.documentElement.setAttribute('dir', 'ltr');
+            document.documentElement.setAttribute('lang', 'ml');
+          } else {
+            document.documentElement.setAttribute('dir', 'ltr');
+            document.documentElement.setAttribute('lang', 'en');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
     <title>MUSAFIR - Your Complete Muslim Travel Companion</title>
     <meta name="description" content="Travel Far. Pray Anywhere. Stay Connected. Qibla Finder, Accurate Prayer Times, Halal Food, Mosques, Smart Itineraries, and Offline Travel Mode for Muslim travellers." />
     <meta property="og:title" content="MUSAFIR - Your Complete Muslim Travel Companion" />
@@ -15,8 +43,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-[#F7F5EF] text-[#17211E] antialiased selection:bg-[#C9A45C]/30 selection:text-[#0F5C4D] min-h-screen">
-    <div id="root"></div>
+  <body class="bg-[#F7F5EF] dark:bg-[#071310] text-[#17211E] dark:text-[#F4F1E8] antialiased selection:bg-[#C9A45C]/30 selection:text-[#0F5C4D] min-h-screen overflow-x-hidden w-full max-w-full">
+    <div id="root" class="min-h-screen bg-[#F7F5EF] dark:bg-[#071310] overflow-x-hidden w-full max-w-full"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
