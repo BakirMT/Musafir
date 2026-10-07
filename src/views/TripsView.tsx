@@ -19,12 +19,16 @@ import {
 
 export const TripsView: React.FC = () => {
   const {
+    trips,
     activeTrip,
     updateTrip,
     currentLocation,
     downloadTripOffline,
     offlineModeActive,
   } = useApp();
+
+  const [selectedTripId, setSelectedTripId] = useState(activeTrip.id);
+  const displayedTrip = trips.find((t) => t.id === selectedTripId) || activeTrip;
 
   const [activeDayTab, setActiveDayTab] = useState(1);
   const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
@@ -113,10 +117,34 @@ export const TripsView: React.FC = () => {
   };
 
   const selectedDay =
-    activeTrip.days.find((d) => d.dayNumber === activeDayTab) || activeTrip.days[0];
+    displayedTrip.days.find((d) => d.dayNumber === activeDayTab) || displayedTrip.days[0];
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200">
+      {/* Trip Switcher Pills */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        <span className="text-xs font-bold text-[#6B756F] dark:text-[#9AA9A2] mr-1 shrink-0">
+          Select Trip:
+        </span>
+        {trips.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => {
+              setSelectedTripId(t.id);
+              setActiveDayTab(1);
+            }}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+              displayedTrip.id === t.id
+                ? 'bg-[#0F5C4D] text-white shadow-sm'
+                : 'bg-white dark:bg-[#0D1C18] text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:bg-gray-100'
+            }`}
+          >
+            {t.id.includes('kerala') ? '🇮🇳 ' : '🇹🇷 '}
+            {t.title.split('—')[0]}
+          </button>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -125,10 +153,10 @@ export const TripsView: React.FC = () => {
             <span>Smart Travel Planner</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            {activeTrip.title}
+            {displayedTrip.title}
           </h1>
           <p className="text-xs text-[#6B756F] dark:text-[#9AA9A2]">
-            📍 {activeTrip.destination} • {activeTrip.startDate} — {activeTrip.endDate} • Budget: ${activeTrip.budgetTotal}
+            📍 {displayedTrip.destination} • {displayedTrip.startDate} — {displayedTrip.endDate} • Budget: ${displayedTrip.budgetTotal}
           </p>
         </div>
 
@@ -163,7 +191,7 @@ export const TripsView: React.FC = () => {
 
       {/* Day Selector Tabs (Day 1, Day 2, Day 3...) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {activeTrip.days.map((day) => (
+        {displayedTrip.days.map((day) => (
           <button
             key={day.dayNumber}
             onClick={() => setActiveDayTab(day.dayNumber)}

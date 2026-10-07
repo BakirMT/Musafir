@@ -6,6 +6,9 @@ export interface LocationInfo {
   lat: number;
   lng: number;
   timezone?: string;
+  accuracy?: number;
+  isLiveGps?: boolean;
+  timestamp?: number;
 }
 
 export type PrayerName = 'Fajr' | 'Sunrise' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
@@ -44,6 +47,8 @@ export type HalalVerificationLevel = 'verified' | 'community' | 'unverified';
 export interface Place {
   id: string;
   name: string;
+  city?: string;
+  country?: string;
   category: PlaceCategory;
   cuisine?: string;
   rating: number;

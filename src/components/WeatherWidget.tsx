@@ -38,6 +38,36 @@ export const WeatherWidget: React.FC = () => {
           high: 35,
           low: 24,
         };
+      case 'Kochi (Kerala)':
+        return {
+          temp: 29,
+          condition: 'Tropical Coastal Breeze',
+          humidity: 76,
+          wind: '10 km/h W',
+          alert: 'Pleasant tropical breeze along Fort Kochi shores. Great weather for visiting Mattancherry & Cheraman Juma Masjid.',
+          high: 31,
+          low: 24,
+        };
+      case 'Kozhikode (Calicut)':
+        return {
+          temp: 28,
+          condition: 'Warm & Palm Breeze',
+          humidity: 74,
+          wind: '11 km/h SW',
+          alert: 'Serene coastal atmosphere in Kuttichira. Ideal for evening prayer at historic Mishkal Mosque and beachside Malabar dining.',
+          high: 31,
+          low: 24,
+        };
+      case 'New Delhi':
+        return {
+          temp: 27,
+          condition: 'Sunny & Clear',
+          humidity: 48,
+          wind: '9 km/h NW',
+          alert: 'Comfortable daytime weather for visiting historic Jama Masjid courtyard and Chandni Chowk.',
+          high: 30,
+          low: 19,
+        };
       case 'London':
         return {
           temp: 14,

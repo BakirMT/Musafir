@@ -14,7 +14,7 @@ import {
 import { calculatePrayerTimes } from '../services/prayerService';
 import { calculateDistanceToKaaba, calculateQiblaDirection } from '../services/qiblaService';
 import { INITIAL_PLACES } from '../services/placesData';
-import { DEFAULT_CHECKLIST, DEMO_TRIP, INITIAL_EXPENSES } from '../services/travelDefaults';
+import { DEFAULT_CHECKLIST, DEMO_TRIP, KERALA_TRIP, INITIAL_EXPENSES } from '../services/travelDefaults';
 
 export type ActiveTab =
   | 'landing'
@@ -35,6 +35,31 @@ export type ActiveTab =
   | 'privacy';
 
 export const GLOBAL_CITIES: LocationInfo[] = [
+  // Kerala, India
+  { city: 'Kochi (Kerala)', country: 'India', lat: 9.9312, lng: 76.2673 },
+  { city: 'Kozhikode (Calicut)', country: 'India', lat: 11.2588, lng: 75.7804 },
+  { city: 'Malappuram (Kerala)', country: 'India', lat: 11.051, lng: 76.0711 },
+  { city: 'Ponnani (Kerala)', country: 'India', lat: 10.7672, lng: 75.925 },
+  { city: 'Wayanad (Kerala)', country: 'India', lat: 11.6103, lng: 76.0827 },
+  { city: 'Kannur (Kerala)', country: 'India', lat: 11.8745, lng: 75.3704 },
+  { city: 'Kasaragod (Kerala)', country: 'India', lat: 12.5102, lng: 74.9852 },
+  { city: 'Thiruvananthapuram', country: 'India', lat: 8.5241, lng: 76.9366 },
+  { city: 'Alappuzha (Alleppey)', country: 'India', lat: 9.4981, lng: 76.3388 },
+  { city: 'Munnar (Kerala)', country: 'India', lat: 10.0889, lng: 77.0595 },
+  { city: 'Palakkad (Kerala)', country: 'India', lat: 10.7867, lng: 76.6548 },
+  { city: 'Thrissur (Kodungallur)', country: 'India', lat: 10.5276, lng: 76.2144 },
+
+  // India - Other Major Metros & Historic Hubs
+  { city: 'New Delhi', country: 'India', lat: 28.6139, lng: 77.209 },
+  { city: 'Hyderabad', country: 'India', lat: 17.385, lng: 78.4867 },
+  { city: 'Mumbai', country: 'India', lat: 19.076, lng: 72.8777 },
+  { city: 'Bengaluru', country: 'India', lat: 12.9716, lng: 77.5946 },
+  { city: 'Srinagar (Kashmir)', country: 'India', lat: 34.0837, lng: 74.7973 },
+  { city: 'Chennai', country: 'India', lat: 13.0827, lng: 80.2707 },
+  { city: 'Kolkata', country: 'India', lat: 22.5726, lng: 88.3639 },
+  { city: 'Lucknow', country: 'India', lat: 26.8467, lng: 80.9462 },
+
+  // Global Destinations & Pilgrimage Hubs
   { city: 'Istanbul', country: 'Türkiye', lat: 41.0082, lng: 28.9784 },
   { city: 'Makkah', country: 'Saudi Arabia', lat: 21.3891, lng: 39.8579 },
   { city: 'Madinah', country: 'Saudi Arabia', lat: 24.5247, lng: 39.5692 },
@@ -44,7 +69,6 @@ export const GLOBAL_CITIES: LocationInfo[] = [
   { city: 'Paris', country: 'France', lat: 48.8566, lng: 2.3522 },
   { city: 'Tokyo', country: 'Japan', lat: 35.6762, lng: 139.6503 },
   { city: 'New York', country: 'United States', lat: 40.7128, lng: -74.006 },
-  { city: 'Kochi (Kerala)', country: 'India', lat: 9.9312, lng: 76.2673 },
 ];
 
 interface AppContextType {
@@ -148,7 +172,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [trips, setTrips] = useState<Trip[]>(() => {
     const saved = localStorage.getItem('musafir_trips');
-    return saved ? JSON.parse(saved) : [DEMO_TRIP];
+    return saved ? JSON.parse(saved) : [DEMO_TRIP, KERALA_TRIP];
   });
   const [checklist, setChecklist] = useState<ChecklistItem[]>(() => {
     const saved = localStorage.getItem('musafir_checklist');
@@ -268,27 +292,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          let cityName = `GPS (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`;
+          let countryName = 'Current Location';
+
+          try {
+            // Quick reverse geocoding via OpenStreetMap Nominatim with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`,
+              { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
+            if (res.ok) {
+              const data = await res.json();
+              const addr = data.address || {};
+              const rawCity =
+                addr.city ||
+                addr.town ||
+                addr.village ||
+                addr.suburb ||
+                addr.county ||
+                addr.state_district ||
+                addr.state ||
+                cityName;
+
+              const state = addr.state || '';
+              if (state === 'Kerala' && !rawCity.toLowerCase().includes('kerala')) {
+                cityName = `${rawCity} (Kerala)`;
+              } else {
+                cityName = rawCity;
+              }
+              countryName = addr.country || countryName;
+            }
+          } catch {
+            // Keep default coordinate label
+          }
+
           const newLoc: LocationInfo = {
-            city: 'My GPS Location',
-            country: 'Current Area',
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
+            city: cityName,
+            country: countryName,
+            lat,
+            lng,
+            accuracy: Math.round(pos.coords.accuracy || 10),
+            isLiveGps: true,
+            timestamp: Date.now(),
           };
           setCurrentLocation(newLoc);
           setLocationLoading(false);
           resolve(true);
         },
         (err) => {
-          setLocationError(
-            err.code === 1
-              ? 'Location access was denied. Switched to Istanbul demo location.'
-              : 'Unable to retrieve location coordinates. Using demo location.'
-          );
+          let errorMsg = 'Unable to acquire GPS signal.';
+          if (err.code === 1) {
+            errorMsg = 'Location permission was denied. Please allow location access in your browser settings or choose a city below.';
+          } else if (err.code === 2) {
+            errorMsg = 'GPS position unavailable. Please check device location sensors or select your city.';
+          } else if (err.code === 3) {
+            errorMsg = 'GPS request timed out. Please check your connection or choose a preset city.';
+          }
+          setLocationError(errorMsg);
           setLocationLoading(false);
           resolve(false);
         },
-        { timeout: 10000, enableHighAccuracy: true }
+        { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
       );
     });
   };
@@ -394,7 +464,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isPlaceSaved,
 
         trips,
-        activeTrip: trips[0] || DEMO_TRIP,
+        activeTrip:
+          trips.find(
+            (t) =>
+              t.destination.toLowerCase().includes(currentLocation.city.toLowerCase().split(' ')[0]) ||
+              t.destination.toLowerCase().includes(currentLocation.country.toLowerCase())
+          ) ||
+          trips[0] ||
+          DEMO_TRIP,
         setTrips,
         updateTrip,
         checklist,

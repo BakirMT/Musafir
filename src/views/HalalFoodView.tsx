@@ -22,7 +22,8 @@ export const HalalFoodView: React.FC = () => {
   const { places, currentLocation, isPlaceSaved, toggleSavePlace, setAddPlaceModalOpen } =
     useApp();
 
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'kebab' | 'sweets' | 'ottoman'>('all');
+  const [regionFilter, setRegionFilter] = useState<'all' | 'kerala' | 'turkey'>('all');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'biryani' | 'kebab' | 'sweets'>('all');
   const [alcoholFreeOnly, setAlcoholFreeOnly] = useState(false);
   const [verificationFilter, setVerificationFilter] = useState<HalalVerificationLevel | 'all'>('all');
   const [reportedModalOpen, setReportedModalOpen] = useState(false);
@@ -31,11 +32,13 @@ export const HalalFoodView: React.FC = () => {
   const foodPlaces = places.filter((p) => p.category === 'restaurant');
 
   const filteredPlaces = foodPlaces.filter((p) => {
+    if (regionFilter === 'kerala' && p.country !== 'India') return false;
+    if (regionFilter === 'turkey' && p.country !== 'Türkiye') return false;
     if (alcoholFreeOnly && !p.alcoholFree) return false;
     if (verificationFilter !== 'all' && p.halalStatus !== verificationFilter) return false;
+    if (activeCategoryFilter === 'biryani' && !p.cuisine?.toLowerCase().includes('biryani')) return false;
     if (activeCategoryFilter === 'kebab' && !p.cuisine?.toLowerCase().includes('kebab')) return false;
     if (activeCategoryFilter === 'sweets' && !p.cuisine?.toLowerCase().includes('sweets')) return false;
-    if (activeCategoryFilter === 'ottoman' && !p.cuisine?.toLowerCase().includes('ottoman')) return false;
     return true;
   });
 
@@ -83,15 +86,49 @@ export const HalalFoodView: React.FC = () => {
 
       {/* Filter Chips Bar */}
       <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap items-center gap-2">
+        {/* Region toggles */}
         <button
-          onClick={() => setActiveCategoryFilter('all')}
+          onClick={() => setRegionFilter('all')}
           className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            activeCategoryFilter === 'all'
+            regionFilter === 'all'
               ? 'bg-[#0F5C4D] text-white shadow-sm'
               : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
           }`}
         >
-          All Cuisines
+          All ({foodPlaces.length})
+        </button>
+
+        <button
+          onClick={() => setRegionFilter('kerala')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'kerala'
+              ? 'bg-[#C9A45C] text-[#071310] shadow-sm'
+              : 'bg-[#C9A45C]/15 text-[#C9A45C] hover:bg-[#C9A45C]/25 border border-[#C9A45C]/30'
+          }`}
+        >
+          🇮🇳 Kerala & India
+        </button>
+
+        <button
+          onClick={() => setRegionFilter('turkey')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'turkey'
+              ? 'bg-[#0F5C4D] text-white shadow-sm'
+              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+          }`}
+        >
+          🇹🇷 Türkiye
+        </button>
+
+        <button
+          onClick={() => setActiveCategoryFilter('biryani')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            activeCategoryFilter === 'biryani'
+              ? 'bg-[#0F5C4D] text-white shadow-sm'
+              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+          }`}
+        >
+          Malabar Dum Biryani
         </button>
 
         <button
@@ -102,7 +139,7 @@ export const HalalFoodView: React.FC = () => {
               : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
           }`}
         >
-          Turkish Kebabs
+          Kebabs & Grills
         </button>
 
         <button
@@ -113,18 +150,7 @@ export const HalalFoodView: React.FC = () => {
               : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
           }`}
         >
-          Baklava & Desserts
-        </button>
-
-        <button
-          onClick={() => setActiveCategoryFilter('ottoman')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            activeCategoryFilter === 'ottoman'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Palace Cuisine
+          Halwa, Sweets & Tea
         </button>
 
         <button

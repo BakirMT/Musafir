@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { WeatherWidget } from '../components/WeatherWidget';
 import { InteractiveMap } from '../components/InteractiveMap';
+import { getCompassCardinalDirection } from '../services/qiblaService';
 import {
   Compass,
   Clock,
@@ -18,6 +19,7 @@ import {
   Check,
   Sparkles,
   WifiOff,
+  Crosshair,
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
@@ -26,6 +28,9 @@ export const DashboardView: React.FC = () => {
     currentLocation,
     prayerTimes,
     qiblaDirection,
+    distanceToKaaba,
+    requestRealLocation,
+    locationLoading,
     setActiveTab,
     setEmergencyModalOpen,
     activeTrip,
@@ -41,8 +46,50 @@ export const DashboardView: React.FC = () => {
     Math.max(10, 100 - (prayerTimes.remainingMinutes / 180) * 100)
   );
 
-  const nearbyMosques = places.filter((p) => p.category === 'mosque').slice(0, 2);
-  const nearbyFood = places.filter((p) => p.category === 'restaurant').slice(0, 2);
+  // Intelligent place filtering matching Kerala, India, or specific cities
+  const locCityLower = currentLocation.city.toLowerCase();
+  const isKerala =
+    locCityLower.includes('kerala') ||
+    locCityLower.includes('kochi') ||
+    locCityLower.includes('calicut') ||
+    locCityLower.includes('kozhikode') ||
+    locCityLower.includes('malappuram') ||
+    locCityLower.includes('ponnani') ||
+    locCityLower.includes('wayanad') ||
+    locCityLower.includes('kannur') ||
+    locCityLower.includes('kasaragod') ||
+    locCityLower.includes('alleppey') ||
+    locCityLower.includes('alappuzha') ||
+    locCityLower.includes('thiruvananthapuram') ||
+    locCityLower.includes('munnar');
+
+  const cityFilteredMosques = places.filter((p) => {
+    if (p.category !== 'mosque') return false;
+    const pCityLower = p.city?.toLowerCase() || '';
+    if (pCityLower.includes(locCityLower.split(' ')[0])) return true;
+    if (isKerala && (pCityLower.includes('kerala') || pCityLower.includes('kozhikode') || pCityLower.includes('kochi'))) return true;
+    return p.country === currentLocation.country;
+  });
+
+  const nearbyMosques = (
+    cityFilteredMosques.length > 0
+      ? cityFilteredMosques
+      : places.filter((p) => p.category === 'mosque')
+  ).slice(0, 2);
+
+  const cityFilteredFood = places.filter((p) => {
+    if (p.category !== 'restaurant') return false;
+    const pCityLower = p.city?.toLowerCase() || '';
+    if (pCityLower.includes(locCityLower.split(' ')[0])) return true;
+    if (isKerala && (pCityLower.includes('kerala') || pCityLower.includes('kozhikode') || pCityLower.includes('kochi') || pCityLower.includes('malabar'))) return true;
+    return p.country === currentLocation.country;
+  });
+
+  const nearbyFood = (
+    cityFilteredFood.length > 0
+      ? cityFilteredFood
+      : places.filter((p) => p.category === 'restaurant')
+  ).slice(0, 2);
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-200">
@@ -157,18 +204,24 @@ export const DashboardView: React.FC = () => {
 
             <div className="flex items-center justify-between mt-2">
               <div>
-                <div className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-gray-100 font-mono">
-                  {qiblaDirection}°
+                <div className="flex items-baseline gap-2">
+                  <div className="text-4xl sm:text-5xl font-black text-gray-900 dark:text-gray-100 font-mono">
+                    {qiblaDirection}°
+                  </div>
+                  <span className="text-sm font-bold text-[#0F5C4D] dark:text-[#C9A45C] bg-[#0F5C4D]/10 dark:bg-[#C9A45C]/15 px-2 py-0.5 rounded-md">
+                    {getCompassCardinalDirection(qiblaDirection)}
+                  </span>
                 </div>
                 <p className="text-xs text-[#6B756F] dark:text-[#9AA9A2] mt-1 font-medium">
-                  Compass Bearing from {currentLocation.city}
+                  Bearing from {currentLocation.city} • <strong className="text-gray-800 dark:text-gray-200">{distanceToKaaba.toLocaleString()} km</strong> to Makkah
                 </p>
               </div>
 
               {/* Minimal Animated Compass Dial Preview */}
               <div
                 onClick={() => setActiveTab('qibla')}
-                className="w-20 h-20 rounded-full border-4 border-[#0F5C4D]/20 dark:border-[#C9A45C]/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition-transform bg-[#F7F5EF] dark:bg-[#071310]"
+                title="Click to open full-screen Qibla Finder"
+                className="w-20 h-20 rounded-full border-4 border-[#0F5C4D]/20 dark:border-[#C9A45C]/30 flex items-center justify-center relative cursor-pointer hover:scale-105 transition-transform bg-[#F7F5EF] dark:bg-[#071310] shadow-inner"
               >
                 <div
                   className="w-1.5 h-10 bg-[#0F5C4D] dark:bg-[#C9A45C] rounded-full transform origin-bottom transition-transform duration-700 shadow-sm"
@@ -179,16 +232,21 @@ export const DashboardView: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
-            <span className="text-xs text-[#6B756F] dark:text-[#9AA9A2]">
-              Sensor-calibrated orientation
-            </span>
+          <div className="mt-6 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
+            <button
+              onClick={requestRealLocation}
+              disabled={locationLoading}
+              className="text-xs text-[#0F5C4D] dark:text-[#C9A45C] hover:underline font-bold flex items-center gap-1 disabled:opacity-50"
+            >
+              <Navigation className={`w-3.5 h-3.5 ${locationLoading ? 'animate-spin' : ''}`} />
+              <span>{locationLoading ? 'Acquiring...' : 'Use Current GPS'}</span>
+            </button>
             <button
               onClick={() => setActiveTab('qibla')}
               className="px-5 py-2.5 rounded-2xl bg-[#0F5C4D] hover:bg-[#083C34] text-white text-xs font-bold shadow-md shadow-[#0F5C4D]/25 flex items-center gap-1.5 active:scale-95 transition-all"
             >
               <Compass className="w-4 h-4 text-[#C9A45C]" />
-              <span>Find Qibla</span>
+              <span>Open Qibla Finder</span>
             </button>
           </div>
         </div>

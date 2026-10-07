@@ -18,6 +18,7 @@ export const MosquesView: React.FC = () => {
   const { places, currentLocation, isPlaceSaved, toggleSavePlace, setAddPlaceModalOpen } =
     useApp();
 
+  const [regionFilter, setRegionFilter] = useState<'all' | 'kerala' | 'turkey'>('all');
   const [filterWomensOnly, setFilterWomensOnly] = useState(false);
   const [filterWheelchairOnly, setFilterWheelchairOnly] = useState(false);
   const [filterJumuaOnly, setFilterJumuaOnly] = useState(false);
@@ -26,6 +27,8 @@ export const MosquesView: React.FC = () => {
   const mosques = places.filter((p) => p.category === 'mosque');
 
   const filteredMosques = mosques.filter((m) => {
+    if (regionFilter === 'kerala' && m.country !== 'India') return false;
+    if (regionFilter === 'turkey' && m.country !== 'Türkiye') return false;
     if (filterWomensOnly && !m.hasWomensArea) return false;
     if (filterWheelchairOnly && !m.hasWheelchairAccess) return false;
     if (filterJumuaOnly && !m.jumuaTime) return false;
@@ -65,6 +68,40 @@ export const MosquesView: React.FC = () => {
           <Filter className="w-3.5 h-3.5" />
           <span>Filters:</span>
         </span>
+
+        {/* Region Quick Toggles */}
+        <button
+          onClick={() => setRegionFilter('all')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'all'
+              ? 'bg-[#0F5C4D] text-white shadow-sm'
+              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+          }`}
+        >
+          All ({mosques.length})
+        </button>
+
+        <button
+          onClick={() => setRegionFilter('kerala')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'kerala'
+              ? 'bg-[#C9A45C] text-[#071310] shadow-sm'
+              : 'bg-[#C9A45C]/15 text-[#C9A45C] hover:bg-[#C9A45C]/25 border border-[#C9A45C]/30'
+          }`}
+        >
+          🇮🇳 Kerala & India
+        </button>
+
+        <button
+          onClick={() => setRegionFilter('turkey')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'turkey'
+              ? 'bg-[#0F5C4D] text-white shadow-sm'
+              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+          }`}
+        >
+          🇹🇷 Türkiye
+        </button>
 
         <button
           onClick={() => setFilterWomensOnly(!filterWomensOnly)}

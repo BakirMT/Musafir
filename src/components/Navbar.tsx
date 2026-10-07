@@ -33,9 +33,28 @@ export const Navbar: React.FC = () => {
     setPresentationModeOpen,
     offlineModeActive,
     setOfflineModeActive,
+    qiblaDirection,
   } = useApp();
 
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const [cityTab, setCityTab] = useState<'kerala' | 'india' | 'global'>('kerala');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const keralaCities = GLOBAL_CITIES.filter((c) =>
+    c.city.includes('Kerala') || c.city.includes('Calicut') || c.city.includes('Alleppey') || c.city.includes('Thiruvananthapuram')
+  );
+  const otherIndiaCities = GLOBAL_CITIES.filter(
+    (c) => c.country === 'India' && !keralaCities.some((kc) => kc.city === c.city)
+  );
+  const globalCities = GLOBAL_CITIES.filter((c) => c.country !== 'India');
+
+  const filteredCities = (
+    cityTab === 'kerala' ? keralaCities : cityTab === 'india' ? otherIndiaCities : globalCities
+  ).filter(
+    (c) =>
+      c.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.country.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 dark:bg-[#0D1C18]/95 backdrop-blur-md border-b border-[#0F5C4D]/10 dark:border-[#C9A45C]/15 transition-colors">
@@ -65,63 +84,133 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Location Selector */}
-        <div className="relative">
-          <button
-            onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#F7F5EF] dark:bg-[#071310] hover:bg-[#0F5C4D]/10 text-[#0F5C4D] dark:text-[#E8DCC2] border border-[#0F5C4D]/15 transition-all shadow-sm"
-          >
-            <MapPin className="w-3.5 h-3.5 text-[#C9A45C]" />
-            <span className="truncate max-w-[120px] sm:max-w-[180px]">
-              {currentLocation.city}, {currentLocation.country}
-            </span>
-            <SlidersHorizontal className="w-3 h-3 text-[#6B756F]" />
-          </button>
+        {/* Center / Navigation Quick Controls */}
+        <div className="flex items-center gap-2">
+          {/* Location Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-[#F7F5EF] dark:bg-[#071310] hover:bg-[#0F5C4D]/10 text-[#0F5C4D] dark:text-[#E8DCC2] border border-[#0F5C4D]/15 transition-all shadow-sm"
+            >
+              <MapPin className="w-3.5 h-3.5 text-[#C9A45C]" />
+              <span className="truncate max-w-[110px] sm:max-w-[170px]">
+                {currentLocation.city}, {currentLocation.country}
+              </span>
+              <SlidersHorizontal className="w-3 h-3 text-[#6B756F]" />
+            </button>
 
-          {cityDropdownOpen && (
-            <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-64 rounded-2xl bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider">
-                  Select Travel Destination
-                </span>
-                <button
-                  onClick={async () => {
-                    await requestRealLocation();
-                    setCityDropdownOpen(false);
-                  }}
-                  disabled={locationLoading}
-                  className="text-[11px] font-semibold text-[#0F5C4D] dark:text-[#C9A45C] hover:underline flex items-center gap-1"
-                >
-                  <Navigation className="w-3 h-3" />
-                  {locationLoading ? 'Locating...' : 'Use GPS'}
-                </button>
-              </div>
-              <div className="max-h-56 overflow-y-auto py-1">
-                {GLOBAL_CITIES.map((city) => (
+            {cityDropdownOpen && (
+              <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 rounded-2xl bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-1.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider">
+                    Select Destination
+                  </span>
                   <button
-                    key={city.city}
-                    onClick={() => {
-                      setCurrentLocation(city);
+                    onClick={async () => {
+                      await requestRealLocation();
                       setCityDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#F7F5EF] dark:hover:bg-[#071310] transition-colors ${
-                      currentLocation.city === city.city
-                        ? 'font-bold text-[#0F5C4D] dark:text-[#C9A45C] bg-[#0F5C4D]/5'
-                        : 'text-gray-700 dark:text-gray-200'
-                    }`}
+                    disabled={locationLoading}
+                    className="text-[11px] font-bold text-[#0F5C4D] dark:text-[#C9A45C] hover:underline flex items-center gap-1"
                   >
-                    <span>
-                      {city.city},{' '}
-                      <span className="text-[#6B756F] dark:text-[#9AA9A2]">{city.country}</span>
-                    </span>
-                    {currentLocation.city === city.city && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D] dark:bg-[#C9A45C]" />
-                    )}
+                    <Navigation className={`w-3 h-3 ${locationLoading ? 'animate-spin' : ''}`} />
+                    {locationLoading ? 'Locating...' : 'Use My GPS'}
                   </button>
-                ))}
+                </div>
+
+                {/* Search & Tabs */}
+                <div className="px-3 py-2 space-y-2 border-b border-gray-100 dark:border-gray-800">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search city in Kerala, India..."
+                    className="w-full px-2.5 py-1 text-xs rounded-lg bg-[#F7F5EF] dark:bg-[#071310] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0F5C4D]"
+                  />
+
+                  <div className="flex items-center gap-1 text-[10px] font-bold">
+                    <button
+                      onClick={() => setCityTab('kerala')}
+                      className={`flex-1 py-1 rounded-md text-center transition-all ${
+                        cityTab === 'kerala'
+                          ? 'bg-[#0F5C4D] text-white shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      🌴 Kerala ({keralaCities.length})
+                    </button>
+                    <button
+                      onClick={() => setCityTab('india')}
+                      className={`flex-1 py-1 rounded-md text-center transition-all ${
+                        cityTab === 'india'
+                          ? 'bg-[#0F5C4D] text-white shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      🇮🇳 India ({otherIndiaCities.length})
+                    </button>
+                    <button
+                      onClick={() => setCityTab('global')}
+                      className={`flex-1 py-1 rounded-md text-center transition-all ${
+                        cityTab === 'global'
+                          ? 'bg-[#0F5C4D] text-white shadow-sm'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
+                      🌍 World
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-56 overflow-y-auto py-1">
+                  {filteredCities.map((city) => (
+                    <button
+                      key={city.city}
+                      onClick={() => {
+                        setCurrentLocation(city);
+                        setCityDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-1.5 text-xs flex items-center justify-between hover:bg-[#F7F5EF] dark:hover:bg-[#071310] transition-colors ${
+                        currentLocation.city === city.city
+                          ? 'font-bold text-[#0F5C4D] dark:text-[#C9A45C] bg-[#0F5C4D]/5'
+                          : 'text-gray-700 dark:text-gray-200'
+                      }`}
+                    >
+                      <span>
+                        {city.city},{' '}
+                        <span className="text-[#6B756F] dark:text-[#9AA9A2]">{city.country}</span>
+                      </span>
+                      {currentLocation.city === city.city && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D] dark:bg-[#C9A45C]" />
+                      )}
+                    </button>
+                  ))}
+                  {filteredCities.length === 0 && (
+                    <div className="px-3.5 py-3 text-center text-xs text-[#6B756F]">
+                      No matching places found.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Quick Qibla Finder Option in Navbar */}
+          <button
+            onClick={() => setActiveTab('qibla')}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border shadow-sm ${
+              activeTab === 'qibla'
+                ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-md shadow-[#0F5C4D]/20'
+                : 'bg-[#C9A45C]/15 hover:bg-[#C9A45C]/25 text-[#0F5C4D] dark:text-[#E8DCC2] border-[#C9A45C]/35'
+            }`}
+            title="Open Qibla Finder directly"
+          >
+            <Compass className={`w-3.5 h-3.5 ${activeTab === 'qibla' ? 'text-[#C9A45C]' : 'text-[#C9A45C]'}`} />
+            <span>Qibla</span>
+            <span className="font-mono text-[11px] font-black text-[#C9A45C]">
+              {qiblaDirection}°
+            </span>
+          </button>
         </div>
 
         {/* Global Action Bar */}

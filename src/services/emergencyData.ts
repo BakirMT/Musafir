@@ -53,13 +53,13 @@ export const EMERGENCY_DIRECTORY: Record<string, EmergencyContacts> = {
   },
   'India': {
     country: 'India',
-    police: '112',
-    ambulance: '108',
+    police: '112 (National Unified) / 100',
+    ambulance: '108 (Emergency Medical) / 102',
     fire: '101',
-    touristAssistance: '1363 (24x7 Multi-lingual Tourist Helpline)',
-    nearestHospital: 'AIIMS Emergency Care',
+    touristAssistance: '1363 (24x7 Multi-lingual Tourist Helpline) / DISHA Kerala: 1056',
+    nearestHospital: 'Aster Medcity Kochi (+91 484 6699999) / AIIMS (+91 11 26588500)',
     embassyPhone: '+91 11 2419 8000',
-    notes: '112 is the National Emergency Response Support System (ERSS).',
+    notes: '112 is the National Emergency Response Support System (ERSS) across India and Kerala. In Kerala, call 1056 for DISHA health and medical helpline.',
   },
   'Malaysia': {
     country: 'Malaysia',

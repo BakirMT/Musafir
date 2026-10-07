@@ -16,12 +16,15 @@ import {
 export const HotelsView: React.FC = () => {
   const { places, currentLocation, isPlaceSaved, toggleSavePlace } = useApp();
 
+  const [regionFilter, setRegionFilter] = useState<'all' | 'kerala' | 'turkey'>('all');
   const [alcoholFreeOnly, setAlcoholFreeOnly] = useState(false);
   const [qiblaMarkedOnly, setQiblaMarkedOnly] = useState(false);
 
   const hotels = places.filter((p) => p.category === 'hotel');
 
   const filteredHotels = hotels.filter((h) => {
+    if (regionFilter === 'kerala' && h.country !== 'India') return false;
+    if (regionFilter === 'turkey' && h.country !== 'Türkiye') return false;
     if (alcoholFreeOnly && !h.alcoholFree) return false;
     if (qiblaMarkedOnly && !h.qiblaAvailable) return false;
     return true;
@@ -47,6 +50,39 @@ export const HotelsView: React.FC = () => {
 
       {/* Filter Chips Bar */}
       <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setRegionFilter('all')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'all'
+              ? 'bg-[#0F5C4D] text-white shadow-sm'
+              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+          }`}
+        >
+          All ({hotels.length})
+        </button>
+
+        <button
+          onClick={() => setRegionFilter('kerala')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'kerala'
+              ? 'bg-[#C9A45C] text-[#071310] shadow-sm'
+              : 'bg-[#C9A45C]/15 text-[#C9A45C] hover:bg-[#C9A45C]/25 border border-[#C9A45C]/30'
+          }`}
+        >
+          🇮🇳 Kerala & India
+        </button>
+
+        <button
+          onClick={() => setRegionFilter('turkey')}
+          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            regionFilter === 'turkey'
+              ? 'bg-[#0F5C4D] text-white shadow-sm'
+              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+          }`}
+        >
+          🇹🇷 Türkiye
+        </button>
+
         <button
           onClick={() => setAlcoholFreeOnly(!alcoholFreeOnly)}
           className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${

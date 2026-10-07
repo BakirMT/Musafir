@@ -23,24 +23,53 @@ export const InteractiveMap: React.FC<{ initialCategory?: PlaceCategory | 'all' 
   const [selectedCategory, setSelectedCategory] = useState<PlaceCategory | 'all'>(initialCategory);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(places[0] || null);
 
+  // Filter places to match current destination or display all
+  const locClean = currentLocation.city.toLowerCase();
+  const isKerala =
+    locClean.includes('kerala') ||
+    locClean.includes('kochi') ||
+    locClean.includes('calicut') ||
+    locClean.includes('kozhikode') ||
+    locClean.includes('malappuram') ||
+    locClean.includes('ponnani') ||
+    locClean.includes('wayanad') ||
+    locClean.includes('kannur') ||
+    locClean.includes('kasaragod') ||
+    locClean.includes('alleppey') ||
+    locClean.includes('alappuzha') ||
+    locClean.includes('thiruvananthapuram') ||
+    locClean.includes('munnar');
+
+  const destinationPlaces = places.filter((p) => {
+    const pCity = p.city?.toLowerCase() || '';
+    if (pCity.includes(locClean.split(' ')[0])) return true;
+    if (isKerala && (pCity.includes('kerala') || pCity.includes('kozhikode') || pCity.includes('kochi'))) return true;
+    return p.country === currentLocation.country;
+  });
+  const activePool = destinationPlaces.length > 0 ? destinationPlaces : places;
+
   const filteredPlaces =
     selectedCategory === 'all'
-      ? places
-      : places.filter((p) => p.category === selectedCategory);
+      ? activePool
+      : activePool.filter((p) => p.category === selectedCategory);
 
-  // Approximate relative positioning on canvas based on Istanbul coordinates
-  const getMarkerPosition = (lat: number, lng: number) => {
-    // Reference center around Sultanahmet: lat ~ 41.01, lng ~ 28.97
-    const latSpan = 0.08;
-    const lngSpan = 0.08;
-
-    const topPct = 50 - ((lat - currentLocation.lat) / latSpan) * 45;
-    const leftPct = 50 + ((lng - currentLocation.lng) / lngSpan) * 45;
-
-    const clampedTop = Math.min(85, Math.max(15, topPct));
-    const clampedLeft = Math.min(85, Math.max(15, leftPct));
-
-    return { top: `${clampedTop}%`, left: `${clampedLeft}%` };
+  // Position markers geographically around the active location
+  const getMarkerPosition = (lat: number, lng: number, index: number) => {
+    const dLat = lat - currentLocation.lat;
+    const dLng = lng - currentLocation.lng;
+    if (Math.abs(dLat) < 0.8 && Math.abs(dLng) < 0.8) {
+      const topPct = 50 - (dLat / 0.35) * 38;
+      const leftPct = 50 + (dLng / 0.35) * 38;
+      return {
+        top: `${Math.min(84, Math.max(16, topPct))}%`,
+        left: `${Math.min(84, Math.max(16, leftPct))}%`,
+      };
+    }
+    const angle = (index * (360 / Math.max(1, filteredPlaces.length)) * Math.PI) / 180;
+    const radius = 28 + (index % 3) * 8;
+    const top = 50 + radius * Math.sin(angle);
+    const left = 50 + radius * Math.cos(angle);
+    return { top: `${Math.min(84, Math.max(16, top))}%`, left: `${Math.min(84, Math.max(16, left))}%` };
   };
 
   return (
@@ -153,9 +182,9 @@ export const InteractiveMap: React.FC<{ initialCategory?: PlaceCategory | 'all' 
         </div>
 
         {/* Interactive Place Markers */}
-        {filteredPlaces.map((place) => {
+        {filteredPlaces.map((place, index) => {
           const isSelected = selectedPlace?.id === place.id;
-          const pos = getMarkerPosition(place.lat, place.lng);
+          const pos = getMarkerPosition(place.lat, place.lng, index);
 
           return (
             <button

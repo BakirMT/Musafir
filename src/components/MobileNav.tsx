@@ -3,9 +3,9 @@ import { useApp, ActiveTab } from '../context/AppContext';
 import {
   LayoutDashboard,
   Compass,
+  Clock,
+  Landmark,
   Map,
-  BookOpen,
-  User,
   ShieldAlert,
 } from 'lucide-react';
 
@@ -14,10 +14,10 @@ export const MobileNav: React.FC = () => {
 
   const navItems: { id: ActiveTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'mosques', label: 'Explore', icon: Map },
+    { id: 'qibla', label: 'Qibla', icon: Compass },
+    { id: 'prayer', label: 'Prayer', icon: Clock },
+    { id: 'mosques', label: 'Explore', icon: Landmark },
     { id: 'trips', label: 'Trips', icon: Map },
-    { id: 'islamic-guide', label: 'Islamic', icon: BookOpen },
-    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
@@ -40,22 +40,29 @@ export const MobileNav: React.FC = () => {
           const isActive =
             activeTab === item.id ||
             (item.id === 'mosques' && (activeTab === 'halal-food' || activeTab === 'hotels')) ||
-            (item.id === 'islamic-guide' && (activeTab === 'qibla' || activeTab === 'prayer' || activeTab === 'hajj-umrah'));
+            (item.id === 'trips' && (activeTab === 'checklist' || activeTab === 'assistant'));
+
+          const isQibla = item.id === 'qibla';
 
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all ${
+              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-xl transition-all relative ${
                 isActive
                   ? 'text-[#0F5C4D] dark:text-[#C9A45C] font-extrabold'
                   : 'text-[#6B756F] dark:text-[#9AA9A2] font-medium'
-              }`}
+              } ${isQibla && isActive ? 'scale-105' : ''}`}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''} transition-transform`} />
+              <div className="relative">
+                <Icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''} transition-transform ${isQibla && isActive ? 'text-[#C9A45C]' : ''}`} />
+                {isQibla && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#C9A45C]" />
+                )}
+              </div>
               <span className="text-[10px] tracking-tight mt-0.5">{item.label}</span>
               {isActive && (
-                <span className="w-1 h-1 rounded-full bg-[#0F5C4D] dark:bg-[#C9A45C] mt-0.5" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0F5C4D] dark:bg-[#C9A45C] mt-0.5" />
               )}
             </button>
           );
