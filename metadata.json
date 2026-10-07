@@ -1,0 +1,11 @@
+{
+  "name": "MUSAFIR - Your Complete Muslim Travel Companion",
+  "description": "Travel Far. Pray Anywhere. Stay Connected. Accurate Qibla finder, prayer times, nearby mosques, halal food finder, AI travel planner, Islamic travel duas, and offline travel mode.",
+  "requestFramePermissions": [
+    "geolocation",
+    "accelerometer",
+    "gyroscope",
+    "magnetometer"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
