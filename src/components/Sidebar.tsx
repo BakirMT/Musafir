@@ -7,45 +7,33 @@ import {
   Clock,
   Landmark,
   UtensilsCrossed,
-  Hotel,
   Map,
-  CheckSquare,
   BookOpen,
-  Sparkles,
   Bot,
-  Coins,
   Bookmark,
   User,
   ShieldAlert,
   MoonStar,
-  Presentation,
-  WifiOff,
-  Plane,
 } from 'lucide-react';
 
 interface NavItem {
   id: ActiveTab;
   translationKey: TranslationKey;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  category?: 'core' | 'travel' | 'islamic' | 'tools';
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', translationKey: 'dashboard', icon: LayoutDashboard, category: 'core' },
-  { id: 'qibla', translationKey: 'qibla', icon: Compass, category: 'islamic' },
-  { id: 'prayer', translationKey: 'prayer', icon: Clock, category: 'islamic' },
-  { id: 'mosques', translationKey: 'mosques', icon: Landmark, category: 'islamic' },
-  { id: 'halal-food', translationKey: 'halalFood', icon: UtensilsCrossed, category: 'travel' },
-  { id: 'hotels', translationKey: 'hotels', icon: Hotel, category: 'travel' },
-  { id: 'trips', translationKey: 'trips', icon: Map, badge: 'AI', category: 'travel' },
-  { id: 'checklist', translationKey: 'checklist', icon: CheckSquare, category: 'travel' },
-  { id: 'islamic-guide', translationKey: 'islamicGuide', icon: BookOpen, category: 'islamic' },
-  { id: 'hajj-umrah', translationKey: 'hajjUmrah', icon: MoonStar, badge: 'Special', category: 'islamic' },
-  { id: 'assistant', translationKey: 'assistant', icon: Bot, badge: 'Smart', category: 'tools' },
-  { id: 'expenses', translationKey: 'expenses', icon: Coins, category: 'tools' },
-  { id: 'saved', translationKey: 'saved', icon: Bookmark, category: 'tools' },
-  { id: 'profile', translationKey: 'profile', icon: User, category: 'tools' },
+  { id: 'dashboard', translationKey: 'dashboard', icon: LayoutDashboard },
+  { id: 'qibla', translationKey: 'qibla', icon: Compass },
+  { id: 'prayer', translationKey: 'prayer', icon: Clock },
+  { id: 'mosques', translationKey: 'mosques', icon: Landmark },
+  { id: 'halal-food', translationKey: 'halalFood', icon: UtensilsCrossed },
+  { id: 'trips', translationKey: 'trips', icon: Map },
+  { id: 'islamic-guide', translationKey: 'islamicGuide', icon: BookOpen },
+  { id: 'hajj-umrah', translationKey: 'hajjUmrah', icon: MoonStar },
+  { id: 'assistant', translationKey: 'assistant', icon: Bot },
+  { id: 'saved', translationKey: 'saved', icon: Bookmark },
+  { id: 'profile', translationKey: 'profile', icon: User },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -53,207 +41,44 @@ export const Sidebar: React.FC = () => {
     activeTab,
     setActiveTab,
     setEmergencyModalOpen,
-    setPresentationModeOpen,
-    offlineModeActive,
-    setOfflineRoamingModalOpen,
-    downloadedPacks,
-    language,
     t,
   } = useApp();
 
-  const packsCount = Object.values(downloadedPacks).filter(Boolean).length;
-
   return (
-    <aside className="hidden md:flex flex-col w-64 shrink-0 bg-white dark:bg-[#0D1C18] border-r border-[#0F5C4D]/10 dark:border-[#C9A45C]/15 min-h-[calc(100vh-4rem)] p-4 select-none">
-      {/* Offline Status Badge if enabled */}
-      {offlineModeActive && (
-        <div className="mb-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-semibold flex items-center gap-2 animate-pulse">
-          <span className="w-2 h-2 rounded-full bg-amber-500" />
-          <span>Offline Mode Active</span>
-        </div>
-      )}
-
-      {/* Presentation Mode Quick Button */}
-      <button
-        onClick={() => setPresentationModeOpen(true)}
-        className="mb-4 w-full px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#0F5C4D]/10 to-[#C9A45C]/15 hover:from-[#0F5C4D]/15 hover:to-[#C9A45C]/25 text-[#0F5C4D] dark:text-[#E8DCC2] border border-[#C9A45C]/30 text-xs font-bold flex items-center justify-between transition-all group shadow-sm"
-      >
-        <div className="flex items-center gap-2">
-          <Presentation className="w-4 h-4 text-[#C9A45C]" />
-          <span>Presentation Mode</span>
-        </div>
-        <span className="text-[10px] bg-[#C9A45C] text-[#071310] px-1.5 py-0.5 rounded font-black">
-          TOUR
-        </span>
-      </button>
-
-      {/* Navigation Sections */}
-      <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
-        <div className="text-[10px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider px-3 mb-1">
-          {t('dailyFaith')}
-        </div>
-        {NAV_ITEMS.filter((i) => i.category === 'core' || i.category === 'islamic').map((item) => {
+    <aside className="hidden md:flex flex-col w-60 shrink-0 bg-white dark:bg-[#0D1C18] border-r border-gray-200 dark:border-gray-800 min-h-[calc(100vh-4rem)] p-3 select-none">
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-1">
+        {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 isActive
-                  ? 'bg-[#0F5C4D] text-white shadow-md shadow-[#0F5C4D]/25 dark:bg-[#17836E]'
-                  : 'text-[#17211E] dark:text-[#E8DCC2] hover:bg-[#F7F5EF] dark:hover:bg-[#071310] text-gray-700'
+                  ? 'bg-[#0F5C4D] text-white shadow-sm'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/60'
               }`}
             >
-              <div className="flex items-center gap-2.5">
-                <Icon
-                  className={`w-4 h-4 ${
-                    isActive ? 'text-[#C9A45C]' : 'text-[#0F5C4D] dark:text-[#C9A45C]'
-                  }`}
-                />
-                <span>{t(item.translationKey)}</span>
-              </div>
-              {item.badge && (
-                <span
-                  className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                    isActive
-                      ? 'bg-[#C9A45C] text-[#071310]'
-                      : 'bg-[#C9A45C]/20 text-[#C9A45C] border border-[#C9A45C]/30'
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-
-        <div className="text-[10px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider px-3 pt-3 mb-1">
-          {t('travelAndPlaces')}
-        </div>
-        {NAV_ITEMS.filter((i) => i.category === 'travel').map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-[#0F5C4D] text-white shadow-md shadow-[#0F5C4D]/25 dark:bg-[#17836E]'
-                  : 'text-[#17211E] dark:text-[#E8DCC2] hover:bg-[#F7F5EF] dark:hover:bg-[#071310] text-gray-700'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon
-                  className={`w-4 h-4 ${
-                    isActive ? 'text-[#C9A45C]' : 'text-[#0F5C4D] dark:text-[#C9A45C]'
-                  }`}
-                />
-                <span>{t(item.translationKey)}</span>
-              </div>
-              {item.badge && (
-                <span
-                  className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                    isActive
-                      ? 'bg-[#C9A45C] text-[#071310]'
-                      : 'bg-[#C9A45C]/20 text-[#C9A45C] border border-[#C9A45C]/30'
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-
-        <div className="text-[10px] font-bold text-[#6B756F] dark:text-[#9AA9A2] uppercase tracking-wider px-3 pt-3 mb-1">
-          {t('companionTools')}
-        </div>
-        {NAV_ITEMS.filter((i) => i.category === 'tools').map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                isActive
-                  ? 'bg-[#0F5C4D] text-white shadow-md shadow-[#0F5C4D]/25 dark:bg-[#17836E]'
-                  : 'text-[#17211E] dark:text-[#E8DCC2] hover:bg-[#F7F5EF] dark:hover:bg-[#071310] text-gray-700'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon
-                  className={`w-4 h-4 ${
-                    isActive ? 'text-[#C9A45C]' : 'text-[#0F5C4D] dark:text-[#C9A45C]'
-                  }`}
-                />
-                <span>{t(item.translationKey)}</span>
-              </div>
-              {item.badge && (
-                <span
-                  className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                    isActive
-                      ? 'bg-[#C9A45C] text-[#071310]'
-                      : 'bg-[#C9A45C]/20 text-[#C9A45C] border border-[#C9A45C]/30'
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
+              <Icon
+                className={`w-4 h-4 shrink-0 ${
+                  isActive ? 'text-[#C9A45C]' : 'text-gray-500 dark:text-gray-400'
+                }`}
+              />
+              <span className="truncate">{t(item.translationKey)}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* Offline Roaming Hub CTA */}
-      <div className="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
-        <button
-          onClick={() => setOfflineRoamingModalOpen(true)}
-          className={`w-full p-2.5 rounded-2xl border text-left flex items-center justify-between transition-all group ${
-            offlineModeActive
-              ? 'bg-amber-500/15 border-amber-500/40 text-amber-900 dark:text-amber-100 shadow-xs'
-              : 'bg-[#F7F5EF] dark:bg-[#071310] border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 hover:border-[#0F5C4D]/40'
-          }`}
-          title="Manage Offline Roaming City Packs & Data"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${
-                offlineModeActive
-                  ? 'bg-amber-500 text-white shadow-xs'
-                  : 'bg-[#0F5C4D]/10 dark:bg-[#C9A45C]/15 text-[#0F5C4D] dark:text-[#C9A45C]'
-              }`}
-            >
-              {offlineModeActive ? <WifiOff className="w-3.5 h-3.5" /> : <Plane className="w-3.5 h-3.5" />}
-            </div>
-            <div className="min-w-0">
-              <div className="text-[11px] font-extrabold truncate text-gray-900 dark:text-gray-100">
-                {language === 'ml' ? 'ഓഫ്‌ലൈൻ റോമിംഗ്' : language === 'ar' ? 'التجوال أوفلاين' : 'Offline Roaming'}
-              </div>
-              <div className="text-[10px] text-[#6B756F] dark:text-[#9AA9A2] truncate">
-                {packsCount} {language === 'ml' ? 'പാക്കുകൾ കാഷിൽ' : language === 'ar' ? 'حزم محفوظة' : 'Packs Active'}
-              </div>
-            </div>
-          </div>
-          <span
-            className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md shrink-0 ${
-              offlineModeActive
-                ? 'bg-amber-500 text-white'
-                : 'bg-[#0F5C4D]/10 dark:bg-[#C9A45C]/20 text-[#0F5C4D] dark:text-[#C9A45C]'
-            }`}
-          >
-            {offlineModeActive ? 'ON' : 'SYNC'}
-          </span>
-        </button>
-
-        {/* Floating Emergency SOS Box */}
+      {/* Emergency SOS Button */}
+      <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
         <button
           onClick={() => setEmergencyModalOpen(true)}
-          className="w-full px-3 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg shadow-red-600/25 active:scale-98 transition-all"
+          className="w-full px-3 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
         >
-          <ShieldAlert className="w-4 h-4 animate-pulse" />
+          <ShieldAlert className="w-4 h-4 text-red-500" />
           <span>{t('sos')}</span>
         </button>
       </div>

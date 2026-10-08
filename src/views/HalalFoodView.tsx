@@ -22,23 +22,33 @@ export const HalalFoodView: React.FC = () => {
   const { places, currentLocation, isPlaceSaved, toggleSavePlace, setAddPlaceModalOpen } =
     useApp();
 
-  const [regionFilter, setRegionFilter] = useState<'all' | 'kerala' | 'turkey'>('all');
-  const [activeCategoryFilter, setActiveCategoryFilter] = useState<'all' | 'biryani' | 'kebab' | 'sweets'>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [alcoholFreeOnly, setAlcoholFreeOnly] = useState(false);
-  const [verificationFilter, setVerificationFilter] = useState<HalalVerificationLevel | 'all'>('all');
   const [reportedModalOpen, setReportedModalOpen] = useState(false);
   const [reportedRestaurantName, setReportedRestaurantName] = useState('');
 
   const foodPlaces = places.filter((p) => p.category === 'restaurant');
 
   const filteredPlaces = foodPlaces.filter((p) => {
-    if (regionFilter === 'kerala' && p.country !== 'India') return false;
-    if (regionFilter === 'turkey' && p.country !== 'Türkiye') return false;
+    if (regionFilter !== 'all') {
+      const match = (p.city || '').toLowerCase().includes(regionFilter.toLowerCase()) ||
+                    (p.address || '').toLowerCase().includes(regionFilter.toLowerCase());
+      if (!match) return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const match = (p.name || '').toLowerCase().includes(q) ||
+                    (p.city || '').toLowerCase().includes(q) ||
+                    (p.cuisine || '').toLowerCase().includes(q) ||
+                    (p.address || '').toLowerCase().includes(q);
+      if (!match) return false;
+    }
     if (alcoholFreeOnly && !p.alcoholFree) return false;
-    if (verificationFilter !== 'all' && p.halalStatus !== verificationFilter) return false;
-    if (activeCategoryFilter === 'biryani' && !p.cuisine?.toLowerCase().includes('biryani')) return false;
-    if (activeCategoryFilter === 'kebab' && !p.cuisine?.toLowerCase().includes('kebab')) return false;
-    if (activeCategoryFilter === 'sweets' && !p.cuisine?.toLowerCase().includes('sweets')) return false;
+    if (activeCategoryFilter !== 'all') {
+      if (!p.cuisine?.toLowerCase().includes(activeCategoryFilter.toLowerCase())) return false;
+    }
     return true;
   });
 
@@ -48,7 +58,7 @@ export const HalalFoodView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
+    <div className="max-w-5xl mx-auto space-y-6 pb-4 sm:pb-6 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -85,98 +95,91 @@ export const HalalFoodView: React.FC = () => {
       </div>
 
       {/* Filter Chips Bar */}
-      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap items-center gap-2">
-        {/* Region toggles */}
-        <button
-          onClick={() => setRegionFilter('all')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            regionFilter === 'all'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          All ({foodPlaces.length})
-        </button>
+      <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search restaurants, dishes (e.g. Paragon, Biryani, Pathiri, Beef, Kayees)..."
+            className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0F5C4D]"
+          />
+        </div>
 
-        <button
-          onClick={() => setRegionFilter('kerala')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            regionFilter === 'kerala'
-              ? 'bg-[#C9A45C] text-[#071310] shadow-sm'
-              : 'bg-[#C9A45C]/15 text-[#C9A45C] hover:bg-[#C9A45C]/25 border border-[#C9A45C]/30'
-          }`}
-        >
-          🇮🇳 Kerala & India
-        </button>
+        {/* Kerala Districts */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <span className="text-[11px] font-bold text-gray-500 mr-1">Districts:</span>
+          {[
+            { id: 'all', label: 'All Kerala' },
+            { id: 'Kozhikode', label: 'Kozhikode' },
+            { id: 'Malappuram', label: 'Malappuram / Tirur' },
+            { id: 'Kochi', label: 'Kochi / Mattancherry' },
+            { id: 'Mannarkkad', label: 'Mannarkkad / Palakkad' },
+            { id: 'Thalassery', label: 'Thalassery / Kannur' },
+            { id: 'Wayanad', label: 'Wayanad' },
+          ].map((chip) => (
+            <button
+              key={chip.id}
+              onClick={() => setRegionFilter(chip.id)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                regionFilter === chip.id
+                  ? 'bg-[#0F5C4D] text-white shadow-xs'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+              }`}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
 
-        <button
-          onClick={() => setRegionFilter('turkey')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            regionFilter === 'turkey'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          🇹🇷 Türkiye
-        </button>
+        {/* Cuisine Types */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-gray-100 dark:border-gray-800">
+          <span className="text-[11px] font-bold text-gray-500 mr-1">Cuisine:</span>
+          {[
+            { id: 'all', label: 'All Dishes' },
+            { id: 'biryani', label: 'Malabar Dum Biryani' },
+            { id: 'pathiri', label: 'Breakfast / Pathiri / Appam' },
+            { id: 'seafood', label: 'Fresh Seafood / Fish Curry' },
+            { id: 'halwa', label: 'Kozhikode Halwa & Snacks' },
+          ].map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategoryFilter(cat.id)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                activeCategoryFilter === cat.id
+                  ? 'bg-[#C9A45C] text-[#071310] font-bold shadow-xs'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+              }`}
+            >
+              {cat.label}
+            </button>
+          ))}
 
-        <button
-          onClick={() => setActiveCategoryFilter('biryani')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            activeCategoryFilter === 'biryani'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Malabar Dum Biryani
-        </button>
+          <button
+            onClick={() => setAlcoholFreeOnly(!alcoholFreeOnly)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+              alcoholFreeOnly
+                ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+            }`}
+          >
+            100% Alcohol-Free
+          </button>
 
-        <button
-          onClick={() => setActiveCategoryFilter('kebab')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            activeCategoryFilter === 'kebab'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Kebabs & Grills
-        </button>
-
-        <button
-          onClick={() => setActiveCategoryFilter('sweets')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            activeCategoryFilter === 'sweets'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Halwa, Sweets & Tea
-        </button>
-
-        <button
-          onClick={() => setAlcoholFreeOnly(!alcoholFreeOnly)}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            alcoholFreeOnly
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Strictly Alcohol-Free
-        </button>
-
-        <button
-          onClick={() =>
-            setVerificationFilter(verificationFilter === 'verified' ? 'all' : 'verified')
-          }
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
-            verificationFilter === 'verified'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Verified Halal Only</span>
-        </button>
+          {(regionFilter !== 'all' || activeCategoryFilter !== 'all' || alcoholFreeOnly || searchQuery) && (
+            <button
+              onClick={() => {
+                setRegionFilter('all');
+                setActiveCategoryFilter('all');
+                setAlcoholFreeOnly(false);
+                setSearchQuery('');
+              }}
+              className="text-xs text-red-600 dark:text-red-400 font-bold ml-auto hover:underline"
+            >
+              Reset Filters
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Halal Places Grid */}
@@ -258,7 +261,7 @@ export const HalalFoodView: React.FC = () => {
                   </p>
 
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {restaurant.facilities.map((f, i) => (
+                    {(restaurant.facilities || []).map((f, i) => (
                       <span
                         key={i}
                         className="px-2 py-0.5 rounded-md bg-[#F7F5EF] dark:bg-[#071310] border border-gray-200 dark:border-gray-800 text-[10px] text-gray-700 dark:text-gray-300 font-medium"

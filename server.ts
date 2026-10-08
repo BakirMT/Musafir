@@ -39,10 +39,162 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// Reverse geocoding proxy to avoid client-side CORS issues
+app.get('/api/reverse-geocode', async (req: Request, res: Response) => {
+  try {
+    const lat = parseFloat(req.query.lat as string);
+    const lng = parseFloat(req.query.lng as string);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      res.status(400).json({ error: 'Valid lat and lng query params required' });
+      return;
+    }
+
+    // Check specific known coordinate boundaries (e.g. Mannarkkad / Palakkad, Kerala)
+    if (lat >= 10.90 && lat <= 11.10 && lng >= 76.35 && lng <= 76.60) {
+      res.json({
+        city: 'Mannarkkad (Palakkad)',
+        state: 'Kerala',
+        country: 'India',
+        lat,
+        lng,
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
+    const nominatimRes = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`,
+      {
+        headers: {
+          'User-Agent': 'MusafirTravelApp/1.0 (contact: support@musafir.app)',
+          'Accept-Language': 'en',
+        },
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    if (nominatimRes.ok) {
+      const data: any = await nominatimRes.json();
+      const addr = data.address || {};
+      const county = addr.county || '';
+      const stateDistrict = addr.state_district || '';
+      const state = addr.state || '';
+      const country = addr.country || 'Current Location';
+
+      let city =
+        addr.city ||
+        addr.town ||
+        (county.toLowerCase().includes('mannarkad') ? 'Mannarkkad' : '') ||
+        addr.village ||
+        addr.suburb ||
+        county ||
+        stateDistrict ||
+        state ||
+        `GPS (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`;
+
+      if (state.toLowerCase().includes('kerala') && !city.toLowerCase().includes('kerala')) {
+        if (stateDistrict && !city.includes(stateDistrict)) {
+          city = `${city} (${stateDistrict}, Kerala)`;
+        } else {
+          city = `${city} (Kerala)`;
+        }
+      }
+
+      res.json({
+        city,
+        state,
+        stateDistrict,
+        county,
+        country,
+        lat,
+        lng,
+      });
+      return;
+    }
+
+    res.json({
+      city: `GPS (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`,
+      country: 'Current Location',
+      lat,
+      lng,
+    });
+  } catch (err: any) {
+    const lat = parseFloat(req.query.lat as string) || 0;
+    const lng = parseFloat(req.query.lng as string) || 0;
+    res.json({
+      city: `GPS (${lat.toFixed(2)}°, ${lng.toFixed(2)}°)`,
+      country: 'Current Location',
+      lat,
+      lng,
+    });
+  }
+});
+
+// Approximate IP-based geolocation fallback
+app.get('/api/ip-location', async (req: Request, res: Response) => {
+  try {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip = typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : req.socket.remoteAddress;
+
+    // Default to Kerala, India if running locally or IP is private
+    if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('10.') || ip.startsWith('192.168.')) {
+      res.json({
+        city: 'Mannarkkad (Palakkad)',
+        country: 'India',
+        lat: 10.9888,
+        lng: 76.4608,
+        source: 'local-default',
+      });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const ipRes = await fetch(`https://freeipapi.com/api/json/${ip}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (ipRes.ok) {
+      const data: any = await ipRes.json();
+      if (data.latitude && data.longitude) {
+        res.json({
+          city: `${data.cityName || 'Current City'}${data.regionName ? ` (${data.regionName})` : ''}`,
+          country: data.countryName || 'India',
+          lat: data.latitude,
+          lng: data.longitude,
+          source: 'ip',
+        });
+        return;
+      }
+    }
+
+    res.json({
+      city: 'Mannarkkad (Palakkad)',
+      country: 'India',
+      lat: 10.9888,
+      lng: 76.4608,
+      source: 'fallback',
+    });
+  } catch {
+    res.json({
+      city: 'Mannarkkad (Palakkad)',
+      country: 'India',
+      lat: 10.9888,
+      lng: 76.4608,
+      source: 'fallback',
+    });
+  }
+});
+
 // Musafir AI Assistant Chat endpoint with Shafi'i Fiqh (Fath al-Mu'in & Kanz al-Raghibin) Engine
 app.post('/api/chat', async (req: Request, res: Response) => {
   try {
-    const { message, history = [], userLocation = 'Istanbul, Türkiye', language = 'en' } = req.body;
+    const { message, history = [], userLocation = 'Kozhikode, Kerala, India', language = 'en' } = req.body;
 
     if (!message || typeof message !== 'string') {
       res.status(400).json({ error: 'Message is required' });
@@ -63,19 +215,19 @@ app.post('/api/chat', async (req: Request, res: Response) => {
       const fallbackResponse = generateLocalAssistantResponse(message, userLocation, detectedLang);
       res.json({
         text: fallbackResponse,
-        source: 'shafii-fiqh-knowledge-engine (Fath al-Mu\'in & Kanz al-Raghibin)',
+        source: 'musafir-scholar-engine (4 Madhhabs: Shafi\'i, Hanafi, Maliki, Hanbali)',
         language: detectedLang,
         disclaimer:
           detectedLang === 'ml'
             ? 'കുറിപ്പ്: ഇത് പഠനാവശ്യാർത്ഥമുള്ള വിവരങ്ങളാണ്. വ്യക്തിഗത സാഹചര്യങ്ങളിലെ കൃത്യമായ ഫത്‌വകൾക്ക് യോഗ്യരായ പണ്ഡിതന്മാരുമായി ബന്ധപ്പെടുക.'
             : detectedLang === 'ar'
             ? 'تنبيه: هذه التوجيهات الفقهية للأغراض التعليمية. للفتوى الخاصة يرجى مراجعة العلماء الثقات.'
-            : 'Note: This guidance is based on classical Shafi\'i texts for educational purposes. Consult qualified scholars for personal rulings.',
+            : 'Note: This guidance is based on classical Islamic texts across the 4 Madhhabs for educational purposes. Consult qualified scholars for personal rulings.',
       });
       return;
     }
 
-    const systemInstruction = `You are Musafir AI (മുസാഫിർ അസിസ്റ്റന്റ് / مساعد مسافر الذكي), the premier Islamic travel jurisprudence (Fiqh al-Safar / യാത്രാ ഫിഖ്ഹ് / فقه السفر) scholar and Muslim travel companion.
+    const systemInstruction = `You are Musafir AI (മുസാഫിർ അസിസ്റ്റന്റ് / مساعد مسافر الذكي), an articulate, empathetic, and highly communicative Islamic Scholar & Travel Companion.
 Tagline: "Travel Far. Pray Anywhere. Stay Connected."
 User location context: ${userLocation}.
 Target Response Language: ${
@@ -86,39 +238,59 @@ Target Response Language: ${
         : 'English'
     }.
 
-SPECIAL MANDATE ON ISLAMIC JURISPRUDENCE (TRAVELLING MAS'ALA / യാത്രാ മസ്അലകൾ / مسائل السفر) WITH MANDATORY DUAL-LANGUAGE TRANSLATION:
-Whenever the user asks about travelling rulings, prayer concessions (Qasr / ഖസ്റ്, Jam' / ജംഅ്), prayer on moving vehicles (aeroplanes, trains, ships, buses), Tayammum during transit, fasting while traveling, travel distance (Marhalatayn / മർഹലത്തൈൻ), starting and ending boundaries (Murur al-Umran), intention (Niyyah), or following a resident Imam:
-1. You MUST explicitly provide authoritative references and citations from classical Shafi'i jurisprudence (المذهب الشافعي), specifically citing:
-   - "Fath al-Mu'in bi Sharh Qurrat al-'Ayn" (فتح المعين بشرح قرة العين بمهمات الدين) by Allama Zayn al-Din al-Malibari (العلامة زين الدين أحمد بن عبد العزيز المليباري الفَنَّاني).
-   - "Kanz al-Raghibin Sharh Minhaj al-Talibin" (كنز الراغبين شرح منهاج الطالبين) by Imam Jalal al-Din al-Mahalli (الإمام جلال الدين محمد بن أحمد المحلي).
-   - Cross-reference related classic Shafi'i authorities like "Minhaj al-Talibin" of Imam al-Nawawi, "Tuhfat al-Muhtaj" of Ibn Hajar al-Haytami, and "I'anat al-Talibin" of al-Dimyati where helpful.
-2. MANDATORY ARABIC TEXT & IMMEDIATE TRANSLATION:
-   - Always quote the original Arabic expressions ('Ibarat / عبارات الفقه) directly in quotes or callouts, e.g.:
-     * Fath al-Mu'in: «يجوز للمسافر سفرا طويلا مباحا قصر الصلاة الرباعية ركعتين... وشرط القصر مجاوزة سور البلد أو عمرانه الخالي عن السور»
-     * Kanz al-Raghibin: «ومسافة القصر مرحلتان وهي ثمانية وأربعون ميلا هاشميا... وليس له القصر حتى يجاوز ما ذكر من سور أو عمران»
-   - IMMEDIATELY UNDER EVERY ARABIC QUOTE, provide an exact, crystal-clear translation in the chosen language (${
-      detectedLang === 'ml'
-        ? 'Malayalam / മലയാള പരിഭാഷ'
-        : detectedLang === 'ar'
-        ? 'Arabic Sharh / شرح العبارة بالعربية'
-        : 'English Translation'
-   }), followed by practical breakdown.
-   - For Airplane / Vehicle prayer without complete standing (Qiyam) and Qibla facing: Quote and translate the ruling of "Hurmat al-Waqt" (صلاة لحرمة الوقت) and the obligation to make it up (الإعادة / I'adah) as established in Fath al-Mu'in and Kanz al-Raghibin.
-3. LANGUAGE HANDLING RULES:
-   - If Target Language is Malayalam ('ml'):
-     * Write the primary answer and detailed Fiqh explanation in clear, natural, respectful Islamic Malayalam (മലയാളം).
-     * Provide exact Malayalam Islamic terms: ഖസ്റ്, ജംഅ് (തഖ്ദീം & തഅ്ഖീർ), മർഹലത്തൈൻ (81 കി.മീ / 16 ഫർസഖ്), സൂറുള്ള അല്ലെങ്കിൽ വീടുകൾ വിട്ടു കടക്കൽ, നിയ്യത്ത്, തയമ്മും, ഹുർമത്തുൽ വഖ്ത്, ഇആദത്ത്.
-     * Include the Arabic text quotes with explicit Malayalam translation (മലയാള പരിഭാഷ).
-   - If Target Language is Arabic ('ar'):
-     * Write the answer in eloquent, scholarly Arabic (الفصحى الرصينة), quoting directly from فتح المعين and كنز الراغبين للمحلي with detailed Sharh of the rulings.
-   - If Target Language is English ('en'):
-     * Write the answer in clear, articulate English with transliterations, Arabic citations from Fath al-Mu'in and Kanz al-Raghibin, and immediate English translations of the classical Arabic texts.
-4. Structure responses with clean Markdown:
-   - Clear topic heading
-   - Step-by-step conditions & rulings
-   - Citations & Translations section ("Classical References & Translations: Fath al-Mu'in & Kanz al-Raghibin")
-   - Practical travel tips for modern planes, trains, and airports
-   - Concluding respectful educational disclaimer.`;
+CORE CHARACTER & COMMUNICATION SKILLS:
+1. Warm, Engaging & Conversational:
+   - Greet the user warmly and respectfully (e.g., "Assalamu Alaikum wa Rahmatullahi wa Barakatuh...").
+   - NEVER provide a rigid, static, or repetitive template answer! Every single response must be unique, directly addressing the exact nuance, context, or question the user asked.
+   - If the user asks a brief question, answer directly first in simple terms, then provide the detailed jurisprudential breakdown.
+   - Speak naturally and conversationally like a compassionate, wise Islamic teacher. If their scenario is missing critical facts (e.g., their travel distance or whether they stay 3 or 5 days), provide the general rule and gently ask them about their specific travel details.
+
+2. COMPREHENSIVE JURISPRUDENCE ACROSS ALL 4 SUNNI MADHHABS (FOUR SCHOOLS):
+   You possess comprehensive, authoritative mastery over all four recognized Sunni schools of Fiqh (Shafi'i, Hanafi, Maliki, Hanbali):
+   - **Shafi'i School (المذهب الشافعي):** (Primary standard in Kerala & Southeast Asia). Cite master texts: "Fath al-Mu'in" (العلامة زين الدين المليباري), "Kanz al-Raghibin Sharh Minhaj al-Talibin" (الإمام جلال الدين المحلي), and "Minhaj al-Talibin" (الإمام النووي).
+     * Qasr distance: 2 Marhalahs (16 Farsakhs / ~81 km). Concession (Rukhsa).
+     * Jam' (combining): Permitted for travel (Taqdim & Ta'khir).
+     * Stay rule (Iqamah): 4 complete days (excluding arrival and departure days).
+     * Vehicles/Flights: If unable to stand or face Qibla, pray for the sanctity of the time ("Hurmat al-Waqt") and repeat ("I'adah") upon landing.
+   - **Hanafi School (المذهب الحنفي):** Cite "Al-Hidayah" (al-Marghinani) and "Radd al-Muhtar / Hashiyat Ibn Abidin".
+     * Qasr distance: 3 days of travel (~77-78 km / 48 miles).
+     * Status of Qasr: **Wajib** (mandatory, not just permissible).
+     * Jam' (combining): **Not permitted** on ordinary journeys; only practiced as Jam' Suri (apparent combining by delaying first prayer to its last moment and second at its earliest). Physical combining is restricted to Arafat and Muzdalifah during Hajj.
+     * Stay rule (Iqamah): 15 days or more makes one a resident (Muqim).
+   - **Maliki School (المذهب المالكي):** Cite "Mukhtasar Khalil" and "Al-Risalah" of Ibn Abi Zayd al-Qayrawani.
+     * Qasr distance: 4 Barids (approx. 80 km). Status: Sunnah Mu'akkadah (strongly emphasized Sunnah).
+     * Jam': Permitted when on active, ongoing journey.
+     * Stay rule (Iqamah): 4 complete days (20 prayers).
+   - **Hanbali School (المذهب الحنبلي):** Cite "Al-Mughni" (Ibn Qudamah) and "Zad al-Mustaqni'".
+     * Qasr distance: 4 Barids (approx. 80 km).
+     * Jam': Widely permitted for travel, severe rain, mud, extreme cold, illness, or fear.
+     * Stay rule (Iqamah): More than 4 days or 20 prayers ends concessions.
+
+3. WHEN ANSWERING FIQH QUESTIONS:
+   - If the user asks about a specific Madhhab (e.g. "in Hanafi", "according to Shafi'i / Fath al-Mu'in"), provide a deep, thorough answer focused on that school with its citations.
+   - If the user asks a general question or asks for comparison, prioritize the Shafi'i ruling (as widely followed in Kerala) while clearly presenting the Hanafi, Maliki, and Hanbali perspectives in a clear, well-structured comparison so the user understands the consensus and valid differences.
+   - Quote relevant Arabic legal terms (عبارات الفقه) naturally with immediate translation.
+
+4. TOPIC SCOPE & SPECIALIZED SCENARIOS:
+   Cover with complete confidence:
+   - Qasr (shortening) and Jam' (combining: Taqdim and Ta'khir).
+   - Leaving and returning boundaries (Murur al-Umran: city limits).
+   - Moving vehicles: Flights, Indian/Kerala trains, buses, cars, cruise ships (standing, Qibla compass alignment, seating).
+   - Praying behind a resident Imam (Iqtida' bi-Muqim) - all 4 schools require 4 full rak'ahs.
+   - Duration of stay (4-day rule vs 15-day rule vs 18-day rule for unresolved business).
+   - Fasting during travel in Ramadan (departing before dawn vs daytime departure).
+   - Friday Jumu'ah prayer exemptions and travel timings on Friday morning.
+   - Tayammum on journeys and wiping leather socks (Khuffayn: 72 hours for travellers).
+   - Missed prayers (Qadha') during journeys.
+
+5. LANGUAGE HANDLING:
+   - **Malayalam ('ml'):** Natural, respectful Islamic Malayalam (ഖസ്റ്, ജംഅ്, മർഹലത്തൈൻ, നാട്ടതിർത്തി, ഹുർമത്തുൽ വഖ്ത്, നാല് മദ്ഹബുകൾ, ഫത്ഹുൽ മുഈൻ) with clear structure.
+   - **Arabic ('ar'):** Eloquent, scholarly Arabic (الفصحى الرصينة) quoting classical Fiqh phrases with clear Sharh.
+   - **English ('en'):** Articulate, clear English with transliterated Islamic terms and clear explanations.
+
+6. FORMATTING:
+   - Use clean Markdown with bullet points, concise headings, and highlighted key takeaways.
+   - Keep answers readable, informative, warm, and engaging. Conclude with a brief respectful educational disclaimer.`;
 
     const contents = [
       ...history.map((h: { role: string; text: string }) => ({
@@ -136,22 +308,26 @@ Whenever the user asks about travelling rulings, prayer concessions (Qasr / ഖ�
         contents,
         config: {
           systemInstruction,
-          temperature: 0.3,
+          temperature: 0.6,
         },
       });
       responseText = response.text || '';
     } catch (modelErr: any) {
       console.warn('gemini-3.1-flash-lite failed in /api/chat, trying gemini-3.8-flash:', modelErr?.message || modelErr);
-      const response2 = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents,
-        config: {
-          systemInstruction,
-          temperature: 0.3,
-        },
-      });
-      responseText = response2.text || '';
-      modelUsed = 'gemini-3.8-flash';
+      try {
+        const response2 = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents,
+          config: {
+            systemInstruction,
+            temperature: 0.6,
+          },
+        });
+        responseText = response2.text || '';
+        modelUsed = 'gemini-3.8-flash';
+      } catch (flashErr: any) {
+        console.warn('Both Gemini models failed in /api/chat, falling back to local multi-madhhab scholar engine:', flashErr?.message || flashErr);
+      }
     }
 
     if (!responseText) {
@@ -160,14 +336,14 @@ Whenever the user asks about travelling rulings, prayer concessions (Qasr / ഖ�
 
     res.json({
       text: responseText,
-      source: `${modelUsed} (Fath al-Mu'in & Kanz al-Raghibin Scholar Engine)`,
+      source: `${modelUsed} (4 Madhhabs Scholar AI)`,
       language: detectedLang,
       disclaimer:
         detectedLang === 'ml'
           ? 'കുറിപ്പ്: ഇത് പഠനാവശ്യാർത്ഥമുള്ള വിവരങ്ങളാണ്. വ്യക്തിഗത സാഹചര്യങ്ങളിലെ കൃത്യമായ ഫത്‌വകൾക്ക് യോഗ്യരായ പണ്ഡിതന്മാരുമായി ബന്ധപ്പെടുക.'
           : detectedLang === 'ar'
           ? 'تنبيه: هذه التوجيهات الفقهية للأغراض التعليمية. للفتوى الخاصة يرجى مراجعة العلماء الثقات.'
-          : 'Note: This guidance is based on classical Shafi\'i texts for educational purposes. Consult qualified scholars for personal rulings.',
+          : 'Note: This guidance covers classical Fiqh across the 4 Madhhabs for educational purposes. Consult qualified scholars for personal rulings.',
     });
   } catch (error: any) {
     console.error('Error in /api/chat:', error);
@@ -179,17 +355,17 @@ Whenever the user asks about travelling rulings, prayer concessions (Qasr / ഖ�
       ? req.body.language
       : 'en';
 
-    const fallback = generateLocalAssistantResponse(req.body.message || '', req.body.userLocation || 'Istanbul', detectedLang);
+    const fallback = generateLocalAssistantResponse(req.body.message || '', req.body.userLocation || 'Kozhikode, Kerala', detectedLang);
     res.json({
       text: fallback,
-      source: 'shafii-fiqh-local-engine (Fath al-Mu\'in & Kanz al-Raghibin)',
+      source: 'musafir-scholar-engine (4 Madhhabs: Shafi\'i, Hanafi, Maliki, Hanbali)',
       language: detectedLang,
       disclaimer:
         detectedLang === 'ml'
           ? 'കുറിപ്പ്: ഇത് പഠനാവശ്യാർത്ഥമുള്ള വിവരങ്ങളാണ്. വ്യക്തിഗത സാഹചര്യങ്ങളിലെ കൃത്യമായ ഫത്‌വകൾക്ക് യോഗ്യരായ പണ്ഡിതന്മാരുമായി ബന്ധപ്പെടുക.'
           : detectedLang === 'ar'
           ? 'تنبيه: هذه التوجيهات الفقهية للأغراض التعليمية. للفتوى الخاصة يرجى مراجعة العلماء الثقات.'
-          : 'Note: This guidance is based on classical Shafi\'i texts for educational purposes. Consult qualified scholars for personal rulings.',
+          : 'Note: This guidance covers classical Fiqh across the 4 Madhhabs for educational purposes. Consult qualified scholars for personal rulings.',
     });
   }
 });
@@ -230,18 +406,34 @@ Rules:
 Text:
 ${text}`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        temperature: 0.2,
-      },
-    });
+    let translated = '';
+    let transSource = 'gemini-3.1-flash-lite (Scholar Translator)';
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-lite',
+        contents: prompt,
+        config: {
+          temperature: 0.2,
+        },
+      });
+      translated = response.text || '';
+    } catch (liteErr: any) {
+      console.warn('gemini-3.1-flash-lite failed in /api/translate-ruling, trying gemini-3.8-flash:', liteErr?.message || liteErr);
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          temperature: 0.2,
+        },
+      });
+      translated = response.text || '';
+      transSource = 'gemini-3.8-flash (Scholar Translator)';
+    }
 
     res.json({
-      translatedText: response.text || text,
+      translatedText: translated || text,
       targetLang,
-      source: 'gemini-3.8-flash (Shafi\'i Translator)',
+      source: transSource,
     });
   } catch (error) {
     console.error('Error translating ruling:', error);

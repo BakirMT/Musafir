@@ -39,24 +39,21 @@ import {
 } from 'lucide-react';
 
 const PRESET_DESTINATIONS = [
-  { name: 'Istanbul', country: 'Türkiye', flag: '🇹🇷', style: 'Ottoman History & Mosques' },
+  { name: 'Kozhikode & Malabar Coast', country: 'Kerala, India', flag: '🌴', style: 'Mishkal Palli, Kuttichira & Paragon Biryani' },
+  { name: 'Kochi & Kodungallur', country: 'Kerala, India', flag: '🌴', style: 'Cheraman Masjid (629 CE) & Mattancherry Heritage' },
+  { name: 'Ponnani & Malappuram', country: 'Kerala, India', flag: '🌴', style: 'Little Mecca, Makhdoom Heritage & Fath al-Mu\'in' },
+  { name: 'Wayanad Rainforests & Hills', country: 'Kerala, India', flag: '🌴', style: 'Tea Plantations, Waterfalls & Mountain Mosques' },
+  { name: 'Mannarkkad & Silent Valley', country: 'Kerala, India', flag: '🌴', style: 'Western Ghats Nature & Peaceful Prayer' },
+  { name: 'Alappuzha (Alleppey)', country: 'Kerala, India', flag: '🌴', style: 'Halal Houseboats & Backwaters Stroll' },
   { name: 'Makkah & Madinah', country: 'Saudi Arabia', flag: '🇸🇦', style: 'Umrah & Holy Sanctuaries' },
-  { name: 'Kochi & Kozhikode', country: 'Kerala, India', flag: '🇮🇳', style: 'Malabar Heritage & Cuisine' },
-  { name: 'Kuala Lumpur', country: 'Malaysia', flag: '🇲🇾', style: 'Modern Islamic Architecture & Halal Food' },
-  { name: 'Cairo', country: 'Egypt', flag: '🇪🇬', style: 'Al-Azhar, Citadel & Islamic Cairo' },
-  { name: 'Dubai & Abu Dhabi', country: 'UAE', flag: '🇦🇪', style: 'Grand Mosques & Cultural Heritage' },
-  { name: 'Cordoba & Granada', country: 'Spain', flag: '🇪🇸', style: 'Andalusian Moorish History' },
-  { name: 'Tashkent & Samarkand', country: 'Uzbekistan', flag: '🇺🇿', style: 'Silk Road Islamic Architecture' },
-  { name: 'London', country: 'United Kingdom', flag: '🇬🇧', style: 'Historic Landmarks & Halal Foodie' },
-  { name: 'Tokyo & Kyoto', country: 'Japan', flag: '🇯🇵', style: 'Muslim-Friendly Exploration' },
 ];
 
 const TRAVEL_STYLES = [
-  'Spiritual & Historic Mosques',
-  'Ottoman & Classical Heritage',
-  'Culinary & Halal Street Food',
-  'Family-Friendly Leisure',
-  'Scenic Nature & Architecture',
+  'Kerala Historic Mosques & Heritage',
+  'Malabar Culinary & Biryani Trail',
+  'Backwaters & Rainforest Nature Retreat',
+  'Family-Friendly Muslim Leisure',
+  'Shafi\'i Islamic Studies & Maqam Trail',
   'Budget Backpacking',
 ];
 
@@ -93,11 +90,11 @@ export const TripsView: React.FC = () => {
   const [copiedToast, setCopiedToast] = useState(false);
 
   // Form states for AI itinerary generator
-  const [destInput, setDestInput] = useState(currentLocation?.city || 'Istanbul');
-  const [countryInput, setCountryInput] = useState(currentLocation?.country || 'Türkiye');
+  const [destInput, setDestInput] = useState(currentLocation?.city || 'Kozhikode (Calicut)');
+  const [countryInput, setCountryInput] = useState(currentLocation?.country || 'India');
   const [daysInput, setDaysInput] = useState(3);
-  const [budgetInput, setBudgetInput] = useState('$600 - $900');
-  const [styleInput, setStyleInput] = useState('Spiritual & Historic Mosques');
+  const [budgetInput, setBudgetInput] = useState('₹15,000 - ₹25,000');
+  const [styleInput, setStyleInput] = useState('Kerala Historic Mosques & Heritage');
   const [prayerPref, setPrayerPref] = useState('Pray in historic congregational mosques');
   const [targetLang, setTargetLang] = useState<'en' | 'ml' | 'ar'>(language || 'en');
   const [strictHalalOnly, setStrictHalalOnly] = useState(true);
@@ -390,7 +387,7 @@ export const TripsView: React.FC = () => {
       : 0;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200">
+    <div className="max-w-5xl mx-auto space-y-6 pb-4 sm:pb-6 animate-in fade-in duration-200">
       {/* Itinerary Generated Toast */}
       {generatedToast && (
         <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-[#0F5C4D] text-white text-xs font-bold flex items-center justify-between shadow-lg shadow-emerald-900/20 animate-in fade-in slide-in-from-top-2">
@@ -966,7 +963,7 @@ export const TripsView: React.FC = () => {
                     required
                     value={destInput}
                     onChange={(e) => setDestInput(e.target.value)}
-                    placeholder="e.g. Istanbul, Makkah, Kochi, Cairo"
+                    placeholder="e.g. Kozhikode, Kochi, Wayanad, Mannarkkad"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-[#071310] border border-gray-200 dark:border-gray-800 font-semibold focus:ring-2 focus:ring-[#0F5C4D] outline-none"
                   />
                 </div>
@@ -979,7 +976,7 @@ export const TripsView: React.FC = () => {
                     type="text"
                     value={countryInput}
                     onChange={(e) => setCountryInput(e.target.value)}
-                    placeholder="e.g. Türkiye, Saudi Arabia, India"
+                    placeholder="e.g. Kerala, India"
                     className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-[#071310] border border-gray-200 dark:border-gray-800 font-semibold focus:ring-2 focus:ring-[#0F5C4D] outline-none"
                   />
                 </div>

@@ -16,22 +16,25 @@ import {
 export const HotelsView: React.FC = () => {
   const { places, currentLocation, isPlaceSaved, toggleSavePlace } = useApp();
 
-  const [regionFilter, setRegionFilter] = useState<'all' | 'kerala' | 'turkey'>('all');
+  const [regionFilter, setRegionFilter] = useState<string>('all');
   const [alcoholFreeOnly, setAlcoholFreeOnly] = useState(false);
   const [qiblaMarkedOnly, setQiblaMarkedOnly] = useState(false);
 
   const hotels = places.filter((p) => p.category === 'hotel');
 
   const filteredHotels = hotels.filter((h) => {
-    if (regionFilter === 'kerala' && h.country !== 'India') return false;
-    if (regionFilter === 'turkey' && h.country !== 'Türkiye') return false;
+    if (regionFilter !== 'all') {
+      const match = (h.city || '').toLowerCase().includes(regionFilter.toLowerCase()) ||
+                    (h.address || '').toLowerCase().includes(regionFilter.toLowerCase());
+      if (!match) return false;
+    }
     if (alcoholFreeOnly && !h.alcoholFree) return false;
     if (qiblaMarkedOnly && !h.qiblaAvailable) return false;
     return true;
   });
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
+    <div className="max-w-5xl mx-auto space-y-6 pb-4 sm:pb-6 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -58,30 +61,27 @@ export const HotelsView: React.FC = () => {
               : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
           }`}
         >
-          All ({hotels.length})
+          All Kerala ({hotels.length})
         </button>
 
-        <button
-          onClick={() => setRegionFilter('kerala')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            regionFilter === 'kerala'
-              ? 'bg-[#C9A45C] text-[#071310] shadow-sm'
-              : 'bg-[#C9A45C]/15 text-[#C9A45C] hover:bg-[#C9A45C]/25 border border-[#C9A45C]/30'
-          }`}
-        >
-          🇮🇳 Kerala & India
-        </button>
-
-        <button
-          onClick={() => setRegionFilter('turkey')}
-          className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
-            regionFilter === 'turkey'
-              ? 'bg-[#0F5C4D] text-white shadow-sm'
-              : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          🇹🇷 Türkiye
-        </button>
+        {[
+          { id: 'Kozhikode', label: 'Kozhikode' },
+          { id: 'Wayanad', label: 'Wayanad' },
+          { id: 'Kochi', label: 'Kochi' },
+          { id: 'Alappuzha', label: 'Alleppey Backwaters' },
+        ].map((chip) => (
+          <button
+            key={chip.id}
+            onClick={() => setRegionFilter(chip.id)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              regionFilter === chip.id
+                ? 'bg-[#C9A45C] text-[#071310] shadow-sm'
+                : 'bg-gray-100 dark:bg-[#071310] text-gray-700 dark:text-gray-300 hover:bg-gray-200'
+            }`}
+          >
+            {chip.label}
+          </button>
+        ))}
 
         <button
           onClick={() => setAlcoholFreeOnly(!alcoholFreeOnly)}
@@ -173,7 +173,7 @@ export const HotelsView: React.FC = () => {
                 </div>
 
                 <div className="space-y-1 pt-1">
-                  {hotel.facilities.map((fac, i) => (
+                  {(hotel.facilities || []).map((fac, i) => (
                     <div
                       key={i}
                       className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-2"

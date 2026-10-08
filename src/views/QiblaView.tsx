@@ -1,35 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useApp, GLOBAL_CITIES } from '../context/AppContext';
+import { useApp } from '../context/AppContext';
 import {
   KAABA_COORDINATES,
   getTurnGuidance,
+  getCompassCardinalDirection,
+  calculateTiltCompensatedHeading,
 } from '../services/qiblaService';
+import { KaabaLogo } from '../components/KaabaLogo';
 import {
   Compass,
   MapPin,
-  RotateCw,
-  Map,
-  CheckCircle2,
   Navigation,
-  Crosshair,
-  Volume2,
-  VolumeX,
-  AlertCircle,
-  HelpCircle,
-  ExternalLink,
-  ChevronRight,
-  Copy,
+  RotateCw,
   Check,
-  Sun,
+  CheckCircle2,
   ArrowRight,
   ArrowLeft,
-  Radio,
-  Sliders,
-  Share2,
-  Search,
-  Sparkles,
-  ShieldCheck,
 } from 'lucide-react';
+
+const QUICK_CITIES = [
+  { name: 'Kozhikode', city: 'Kozhikode (Calicut)', country: 'India', lat: 11.2588, lng: 75.7804, qibla: 291 },
+  { name: 'Mannarkkad', city: 'Mannarkkad (Palakkad)', country: 'India', lat: 10.9888, lng: 76.4608, qibla: 291 },
+  { name: 'Malappuram', city: 'Malappuram', country: 'India', lat: 11.051, lng: 76.0711, qibla: 291 },
+  { name: 'Ponnani', city: 'Ponnani', country: 'India', lat: 10.7672, lng: 75.925, qibla: 291 },
+  { name: 'Kochi', city: 'Kochi (Ernakulam)', country: 'India', lat: 9.9312, lng: 76.2673, qibla: 291 },
+  { name: 'Kannur', city: 'Kannur', country: 'India', lat: 11.8745, lng: 75.3704, qibla: 291 },
+  { name: 'Wayanad', city: 'Wayanad (Kalpetta)', country: 'India', lat: 11.6055, lng: 76.0825, qibla: 291 },
+  { name: 'Trivandrum', city: 'Thiruvananthapuram', country: 'India', lat: 8.5241, lng: 76.9366, qibla: 292 },
+  { name: 'Makkah', city: 'Makkah', country: 'Saudi Arabia', lat: 21.3891, lng: 39.8579, qibla: 0 },
+];
 
 export const QiblaView: React.FC = () => {
   const {
@@ -39,891 +38,314 @@ export const QiblaView: React.FC = () => {
     distanceToKaaba,
     requestRealLocation,
     locationLoading,
-    locationError,
-    t,
   } = useApp();
 
-  // Mode Selection: 'compass' | 'map' | 'sun'
-  const [activeMode, setActiveMode] = useState<'compass' | 'map' | 'sun'>('compass');
-
-  // Device orientation state
   const [deviceHeading, setDeviceHeading] = useState<number | null>(null);
+  const [manualHeading, setManualHeading] = useState<number>(0);
   const [sensorAvailable, setSensorAvailable] = useState<boolean>(false);
-  const [calibrating, setCalibrating] = useState<boolean>(false);
-  const [calibrationModalOpen, setCalibrationModalOpen] = useState<boolean>(false);
-  const [manualOffset, setManualOffset] = useState<number>(0);
+  const [needsIosPermission, setNeedsIosPermission] = useState<boolean>(false);
+  const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
+  const [gpsSuccessToast, setGpsSuccessToast] = useState<boolean>(false);
 
-  // Audio & UI states
-  const [soundFeedback, setSoundFeedback] = useState<boolean>(true);
-  const [locationSuccessToast, setLocationSuccessToast] = useState<boolean>(false);
-  const [copiedCoordsToast, setCopiedCoordsToast] = useState<boolean>(false);
-
-  // Quick City Switcher options
-  const [citySelectorOpen, setCitySelectorOpen] = useState<boolean>(false);
-  const [activeCityTab, setActiveCityTab] = useState<'kerala' | 'india' | 'global'>('kerala');
-  const [citySearchFilter, setCitySearchFilter] = useState<string>('');
-
-  // Continuous GPS tracking
-  const [continuousTracking, setContinuousTracking] = useState<boolean>(false);
-  const [liveAccuracy, setLiveAccuracy] = useState<number | null>(currentLocation.accuracy || null);
-
-  const prevAlignedRef = useRef<boolean>(false);
-  const watchIdRef = useRef<number | null>(null);
-
-  // Device orientation sensor listener (iOS & Android)
+  // Auto request location on initial mount if not yet GPS-locked
   useEffect(() => {
+    if (!currentLocation.isLiveGps) {
+      requestRealLocation().catch(() => {});
+    }
+  }, []);
+
+  // Listen to device orientation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (
+      typeof (DeviceOrientationEvent as any) !== 'undefined' &&
+      typeof (DeviceOrientationEvent as any).requestPermission === 'function'
+    ) {
+      setNeedsIosPermission(true);
+    }
+
     const handleOrientation = (e: DeviceOrientationEvent) => {
-      if ((e as any).webkitCompassHeading !== undefined) {
-        // iOS Safari (0 = Magnetic North, clockwise)
-        setDeviceHeading((e as any).webkitCompassHeading);
-        setSensorAvailable(true);
+      let heading: number | null = null;
+
+      // 1. iOS Safari webkitCompassHeading
+      if (typeof (e as any).webkitCompassHeading !== 'undefined') {
+        const h = (e as any).webkitCompassHeading;
+        if (typeof h === 'number' && !isNaN(h)) {
+          heading = Math.round(h * 10) / 10;
+        }
+      }
+      // 2. Android Chrome with tilt compensation
+      else if (e.alpha !== null && e.beta !== null && e.gamma !== null) {
+        heading = calculateTiltCompensatedHeading(e.alpha, e.beta, e.gamma);
       } else if (e.alpha !== null) {
-        // Standard Android/W3C (0 = North, counter-clockwise)
-        const heading = (360 - e.alpha) % 360;
+        heading = (360 - e.alpha) % 360;
+      }
+
+      if (heading !== null && !isNaN(heading)) {
         setDeviceHeading(heading);
         setSensorAvailable(true);
       }
     };
 
-    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', handleOrientation, true);
-    }
-
-    return () => {
-      window.removeEventListener('deviceorientation', handleOrientation, true);
-    };
-  }, []);
-
-  // Continuous GPS watch position when requested
-  useEffect(() => {
-    if (continuousTracking && typeof navigator !== 'undefined' && navigator.geolocation) {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (pos) => {
-          setLiveAccuracy(Math.round(pos.coords.accuracy || 10));
-          setCurrentLocation({
-            city: currentLocation.city,
-            country: currentLocation.country,
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: Math.round(pos.coords.accuracy || 10),
-            isLiveGps: true,
-            timestamp: Date.now(),
-          });
-        },
-        (err) => {
-          console.warn('WatchPosition error:', err);
-        },
-        { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
-      );
+    // Prefer deviceorientationabsolute if supported (Android Chrome)
+    const hasAbsolute = typeof window !== 'undefined' && 'ondeviceorientationabsolute' in (window as any);
+    if (hasAbsolute) {
+      (window as any).addEventListener('deviceorientationabsolute', handleOrientation);
     } else {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
+      window.addEventListener('deviceorientation', handleOrientation);
     }
 
     return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
+      if (hasAbsolute) {
+        (window as any).removeEventListener('deviceorientationabsolute', handleOrientation);
+      } else {
+        window.removeEventListener('deviceorientation', handleOrientation);
       }
     };
-  }, [continuousTracking, currentLocation.city, currentLocation.country, setCurrentLocation]);
+  }, [permissionGranted]);
 
-  // Compute rotation angles
-  const effectiveCompassHeading = (deviceHeading !== null ? deviceHeading : 0) + manualOffset;
-  const kaabaRelativeAngle = (qiblaDirection - effectiveCompassHeading + 360) % 360;
-
-  // Real-time turn guidance (turn right / turn left / aligned)
-  const turnGuidance = getTurnGuidance(effectiveCompassHeading, qiblaDirection, 4);
-  const isFacingKaaba = turnGuidance.status === 'aligned';
-
-  // Haptic & Audio feedback when aligning
-  useEffect(() => {
-    if (isFacingKaaba && !prevAlignedRef.current) {
-      // Haptic vibration
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        navigator.vibrate([40, 60, 40]);
-      }
-      // Gentle audio chime if sound is enabled
-      if (soundFeedback) {
-        try {
-          const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-          osc.frequency.exponentialRampToValueAtTime(659.25, audioCtx.currentTime + 0.3); // E5
-          gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + 0.6);
-        } catch {
-          // audio context not allowed without interaction
-        }
-      }
-    }
-    prevAlignedRef.current = isFacingKaaba;
-  }, [isFacingKaaba, soundFeedback]);
-
-  // Handle GPS location request
-  const handleGetLiveLocation = async () => {
-    const success = await requestRealLocation();
-    if (success) {
-      setLocationSuccessToast(true);
-      setTimeout(() => setLocationSuccessToast(false), 3500);
-    }
-  };
-
-  // Calibration request for iOS 13+
-  const handleCalibrate = async () => {
-    setCalibrating(true);
+  // Request sensor permission on iOS 13+
+  const handleRequestIosPermission = async () => {
     if (
       typeof (DeviceOrientationEvent as any) !== 'undefined' &&
       typeof (DeviceOrientationEvent as any).requestPermission === 'function'
     ) {
       try {
-        const permission = await (DeviceOrientationEvent as any).requestPermission();
-        if (permission === 'granted') {
+        const response = await (DeviceOrientationEvent as any).requestPermission();
+        if (response === 'granted') {
+          setPermissionGranted(true);
+          setNeedsIosPermission(false);
           setSensorAvailable(true);
         }
       } catch (err) {
-        console.warn('Orientation permission error:', err);
+        console.warn('iOS orientation permission error:', err);
       }
     }
-    setTimeout(() => {
-      setCalibrating(false);
-    }, 1500);
   };
 
-  // Copy coordinates & Qibla info
-  const handleCopyCoordinates = () => {
-    const text = `🕋 Musafir Qibla Direction\n📍 Location: ${currentLocation.city}, ${currentLocation.country}\n🌐 Coordinates: ${currentLocation.lat.toFixed(5)}° N, ${currentLocation.lng.toFixed(5)}° E\n🧭 Qibla Bearing: ${qiblaDirection}°\n📏 Distance to Kaaba: ${distanceToKaaba.toLocaleString()} km`;
-    navigator.clipboard?.writeText(text);
-    setCopiedCoordsToast(true);
-    setTimeout(() => setCopiedCoordsToast(false), 3000);
+  // Live effective heading (from hardware sensor or manual test slider)
+  const effectiveHeading = deviceHeading !== null ? deviceHeading : manualHeading;
+  const kaabaRelativeAngle = (qiblaDirection - effectiveHeading + 360) % 360;
+
+  // Real-time turn guidance (turn right / turn left / aligned)
+  const turnGuidance = getTurnGuidance(effectiveHeading, qiblaDirection, 4);
+  const isAligned = turnGuidance.status === 'aligned';
+
+  const handleUseGps = async () => {
+    const ok = await requestRealLocation();
+    if (ok) {
+      setGpsSuccessToast(true);
+      setTimeout(() => setGpsSuccessToast(false), 3000);
+    }
   };
-
-  const isLiveGps =
-    currentLocation.isLiveGps ||
-    currentLocation.city.includes('GPS') ||
-    currentLocation.city.includes('My GPS');
-
-  // Categorized city lists
-  const keralaCities = GLOBAL_CITIES.filter(
-    (c) =>
-      c.city.includes('Kerala') ||
-      c.city.includes('Calicut') ||
-      c.city.includes('Alleppey') ||
-      c.city.includes('Thiruvananthapuram')
-  );
-  const otherIndiaCities = GLOBAL_CITIES.filter(
-    (c) => c.country === 'India' && !keralaCities.some((kc) => kc.city === c.city)
-  );
-  const globalCities = GLOBAL_CITIES.filter((c) => c.country !== 'India');
-
-  const currentTabCities =
-    activeCityTab === 'kerala'
-      ? keralaCities
-      : activeCityTab === 'india'
-      ? otherIndiaCities
-      : globalCities;
-
-  const filteredCities = currentTabCities.filter(
-    (c) =>
-      c.city.toLowerCase().includes(citySearchFilter.toLowerCase()) ||
-      c.country.toLowerCase().includes(citySearchFilter.toLowerCase())
-  );
 
   return (
-    <div className="space-y-3 sm:space-y-6 pb-8 sm:pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
-      {/* ============================================================ */}
-      {/* 1. TOP HEADER & UNIFIED VIEW ARRANGEMENT OPTIONS              */}
-      {/* ============================================================ */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+    <div className="max-w-2xl mx-auto space-y-5 pb-4 sm:pb-6 animate-in fade-in duration-200">
+      {/* 1. Header with Location & GPS Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-800 pb-4">
         <div>
-          <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#C9A45C]">
-            <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Sacred Direction</span>
-          </div>
-          <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900 dark:text-gray-100">
-            {t('qibla')}
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Compass className="w-6 h-6 text-[#0F5C4D] dark:text-[#C9A45C]" />
+            <span>Qibla Finder</span>
           </h1>
-          <p className="text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2]">
-            Spherical geodesic azimuth toward the Holy Kaaba in Makkah al-Mukarramah
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+            Compass direction to the Holy Kaaba in Makkah
           </p>
         </div>
 
-        {/* View Mode Segmented Switcher & Tools */}
-        <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
-          {/* Segmented Mode Control */}
-          <div className="p-0.5 sm:p-1 rounded-xl sm:rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 shadow-sm flex items-center">
-            <button
-              onClick={() => setActiveMode('compass')}
-              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 ${
-                activeMode === 'compass'
-                  ? 'bg-[#0F5C4D] text-white shadow-sm'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-            >
-              <Compass className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span>{t('compass')}</span>
-            </button>
-
-            <button
-              onClick={() => setActiveMode('map')}
-              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 ${
-                activeMode === 'map'
-                  ? 'bg-[#0F5C4D] text-white shadow-sm'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-            >
-              <Map className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span>{t('mapRay')}</span>
-            </button>
-
-            <button
-              onClick={() => setActiveMode('sun')}
-              className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1 sm:gap-1.5 ${
-                activeMode === 'sun'
-                  ? 'bg-[#0F5C4D] text-white shadow-sm'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-            >
-              <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500" />
-              <span>{t('sunShadow')}</span>
-            </button>
-          </div>
-
-          {/* Quick Action Tools */}
-          <button
-            onClick={() => setSoundFeedback(!soundFeedback)}
-            title={soundFeedback ? 'Alignment Chime Enabled' : 'Alignment Chime Muted'}
-            className={`p-1.5 sm:p-2 rounded-lg sm:rounded-xl border text-xs font-bold transition-all ${
-              soundFeedback
-                ? 'bg-white dark:bg-[#0D1C18] border-gray-200 dark:border-gray-800 text-[#0F5C4D] dark:text-[#C9A45C]'
-                : 'bg-gray-100 dark:bg-gray-800 border-gray-200 text-gray-400'
-            }`}
-          >
-            {soundFeedback ? <Volume2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <VolumeX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-          </button>
-
-          <button
-            onClick={() => setCalibrationModalOpen(true)}
-            className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold bg-[#C9A45C] hover:bg-[#b8954e] text-[#071310] flex items-center gap-1 sm:gap-1.5 shadow-sm active:scale-95 transition-all"
-            title="Calibrate compass sensor"
-          >
-            <RotateCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            <span className="hidden xs:inline sm:inline">{t('calibrate')}</span>
-          </button>
-        </div>
+        <button
+          onClick={handleUseGps}
+          disabled={locationLoading}
+          className="px-3.5 py-2 rounded-xl bg-[#0F5C4D] hover:bg-[#083C34] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all self-start sm:self-auto disabled:opacity-50"
+        >
+          <Navigation className={`w-3.5 h-3.5 ${locationLoading ? 'animate-spin' : ''}`} />
+          <span>{locationLoading ? 'Locating...' : 'Use My GPS'}</span>
+        </button>
       </div>
 
-      {/* ============================================================ */}
-      {/* 2. CURRENT LOCATION & LIVE GPS CONTROL BAR (HERO ARRANGEMENT) */}
-      {/* ============================================================ */}
-      <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0F5C4D] via-[#0b483c] to-[#083C34] text-white shadow-xl shadow-[#0F5C4D]/25 relative overflow-hidden">
-        {/* Subtle Decorative Pattern */}
-        <div className="absolute right-0 top-0 bottom-0 w-48 bg-islamic-pattern opacity-15 pointer-events-none" />
-
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-5 relative z-10">
-          {/* Left: Location & Bearing Identity */}
-          <div className="flex items-start gap-2.5 sm:gap-4">
-            <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-[#C9A45C]/20 border border-[#C9A45C]/40 flex items-center justify-center shrink-0 shadow-inner">
-              <Crosshair className={`w-5 h-5 sm:w-7 sm:h-7 text-[#C9A45C] ${continuousTracking ? 'animate-spin' : 'animate-pulse'}`} />
-            </div>
-
-            <div className="space-y-0.5 sm:space-y-1 min-w-0">
-              {/* Status Tags */}
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <span className={`text-[9px] sm:text-[10px] font-black uppercase px-2 sm:px-2.5 py-0.5 rounded-full tracking-wide ${
-                  isLiveGps
-                    ? 'bg-emerald-400 text-emerald-950 ring-2 ring-emerald-400/40'
-                    : 'bg-[#C9A45C] text-[#071310]'
-                }`}>
-                  {isLiveGps ? t('liveGpsActive') : t('selectedLocationBadge')}
-                </span>
-
-                <span className="text-[10px] sm:text-xs font-mono text-[#E8DCC2]">
-                  {currentLocation.lat.toFixed(4)}° N, {currentLocation.lng.toFixed(4)}° E
-                </span>
-
-                {liveAccuracy && (
-                  <span className="text-[9px] sm:text-[10px] text-emerald-200 bg-white/10 px-1.5 sm:px-2 py-0.5 rounded-full font-mono">
-                    ±{liveAccuracy}m
-                  </span>
-                )}
-              </div>
-
-              {/* City Title */}
-              <h2 className="text-lg sm:text-2xl font-black text-white leading-tight truncate">
-                {currentLocation.city}, {currentLocation.country}
-              </h2>
-
-              {/* Azimuth & Kaaba Distance */}
-              <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-white/90 flex-wrap">
-                <span className="flex items-center gap-1">
-                  <Compass className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C9A45C]" />
-                  <span>Qibla:</span>
-                  <strong className="text-[#C9A45C] font-mono text-sm sm:text-base font-black">
-                    {qiblaDirection}°
-                  </strong>
-                </span>
-
-                <span className="opacity-60">•</span>
-
-                <span>
-                  Distance: <strong className="text-white font-mono">{distanceToKaaba.toLocaleString()} km</strong> to Kaaba
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Arranged Action Buttons for Current Location */}
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 sm:self-start lg:self-center pt-1 lg:pt-0">
-            {/* 1. Detect My Real Location (Primary) */}
-            <button
-              onClick={handleGetLiveLocation}
-              disabled={locationLoading}
-              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-white text-[#0F5C4D] hover:bg-[#F7F5EF] text-[11px] sm:text-xs font-black shadow-md flex items-center justify-center gap-1.5 sm:gap-2 active:scale-95 transition-all disabled:opacity-50"
-            >
-              <Navigation className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0F5C4D] ${locationLoading ? 'animate-spin' : ''}`} />
-              <span>{locationLoading ? t('locating') : t('useGps')}</span>
-            </button>
-
-            {/* 2. Continuous Tracking Toggle */}
-            <button
-              onClick={() => setContinuousTracking(!continuousTracking)}
-              title="Continuously track your position as you walk or travel"
-              className={`px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
-                continuousTracking
-                  ? 'bg-emerald-500/30 border-emerald-300 text-white shadow-sm ring-2 ring-emerald-400/40'
-                  : 'bg-black/25 border-white/20 text-white hover:bg-black/40'
-              }`}
-            >
-              <Radio className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${continuousTracking ? 'animate-pulse text-emerald-300' : ''}`} />
-              <span>{continuousTracking ? 'Live Watch: ON' : 'Live Watch'}</span>
-            </button>
-
-            {/* 3. Open Destination Switcher */}
-            <button
-              onClick={() => setCitySelectorOpen(!citySelectorOpen)}
-              className={`px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-[11px] sm:text-xs font-bold border flex items-center justify-center gap-1 sm:gap-1.5 transition-all ${
-                citySelectorOpen
-                  ? 'bg-[#C9A45C] text-[#071310] border-[#C9A45C]'
-                  : 'bg-black/25 border-white/20 text-white hover:bg-black/40'
-              }`}
-            >
-              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span>{citySelectorOpen ? 'Close Places' : 'Kerala / Cities'}</span>
-            </button>
-
-            {/* 4. Copy Details */}
-            <button
-              onClick={handleCopyCoordinates}
-              title="Copy GPS coordinates, Qibla heading, and distance"
-              className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-black/25 hover:bg-black/40 border border-white/20 text-white flex items-center justify-center transition-all"
-            >
-              {copiedCoordsToast ? <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300" /> : <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Feedback Toasts */}
-        {locationSuccessToast && (
-          <div className="mt-2.5 sm:mt-4 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-emerald-500/30 border border-emerald-400/50 text-[11px] sm:text-xs font-semibold text-emerald-100 flex items-center gap-2 animate-in fade-in duration-150">
-            <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300 shrink-0" />
-            <span>Device GPS coordinates locked! Accurate Qibla bearing calculated at {qiblaDirection}°.</span>
-          </div>
-        )}
-
-        {copiedCoordsToast && (
-          <div className="mt-2.5 sm:mt-4 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-emerald-500/30 border border-emerald-400/50 text-[11px] sm:text-xs font-semibold text-emerald-100 flex items-center gap-2 animate-in fade-in duration-150">
-            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-300 shrink-0" />
-            <span>Qibla direction and coordinates copied to clipboard!</span>
-          </div>
-        )}
-
-        {locationError && (
-          <div className="mt-2.5 sm:mt-4 p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-red-500/25 border border-red-400/50 text-[11px] sm:text-xs font-semibold text-red-100 flex items-center gap-2">
-            <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-300 shrink-0" />
-            <span>{locationError}</span>
-          </div>
-        )}
-      </div>
-
-      {/* ============================================================ */}
-      {/* 3. QUICK DESTINATIONS ACCORDION / DRAWER (KERALA, INDIA, GLOBAL) */}
-      {/* ============================================================ */}
-      {citySelectorOpen && (
-        <div className="p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-md space-y-2.5 sm:space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 border-b border-gray-100 dark:border-gray-800 pb-2 sm:pb-3">
-            <div>
-              <h3 className="text-xs sm:text-sm font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 sm:gap-2">
-                <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#C9A45C]" />
-                <span>Select Travel Destination</span>
-              </h3>
-              <p className="text-[10px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2]">
-                Instant spherical Qibla recalculated for any location
-              </p>
-            </div>
-
-            {/* Category Filter Tabs */}
-            <div className="flex items-center gap-1 bg-[#F7F5EF] dark:bg-[#071310] p-1 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
-              <button
-                onClick={() => setActiveCityTab('kerala')}
-                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
-                  activeCityTab === 'kerala'
-                    ? 'bg-[#0F5C4D] text-white shadow-sm'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-[#0F5C4D]'
-                }`}
-              >
-                🌴 Kerala ({keralaCities.length})
-              </button>
-              <button
-                onClick={() => setActiveCityTab('india')}
-                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
-                  activeCityTab === 'india'
-                    ? 'bg-[#0F5C4D] text-white shadow-sm'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-[#0F5C4D]'
-                }`}
-              >
-                🇮🇳 India ({otherIndiaCities.length})
-              </button>
-              <button
-                onClick={() => setActiveCityTab('global')}
-                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap ${
-                  activeCityTab === 'global'
-                    ? 'bg-[#0F5C4D] text-white shadow-sm'
-                    : 'text-gray-700 dark:text-gray-300 hover:text-[#0F5C4D]'
-                }`}
-              >
-                🌍 Global ({globalCities.length})
-              </button>
-            </div>
-          </div>
-
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={citySearchFilter}
-              onChange={(e) => setCitySearchFilter(e.target.value)}
-              placeholder="Search destination (e.g. Kozhikode, Kochi, Malappuram)..."
-              className="w-full pl-8 pr-3 py-1.5 sm:py-2 text-[11px] sm:text-xs rounded-xl bg-[#F7F5EF] dark:bg-[#071310] border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#0F5C4D]"
-            />
-          </div>
-
-          {/* City Chips Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5 sm:gap-2 pt-1 max-h-52 sm:max-h-60 overflow-y-auto">
-            {filteredCities.map((city) => {
-              const isSelected = currentLocation.city === city.city;
-              return (
-                <button
-                  key={city.city}
-                  onClick={() => {
-                    setCurrentLocation(city);
-                    setCitySelectorOpen(false);
-                  }}
-                  className={`p-2 sm:p-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold text-left transition-all flex items-center justify-between border ${
-                    isSelected
-                      ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-sm'
-                      : 'bg-[#F7F5EF] dark:bg-[#071310] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:border-[#0F5C4D]'
-                  }`}
-                >
-                  <span className="truncate">{city.city}</span>
-                  {isSelected && <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#C9A45C] shrink-0 ml-1" />}
-                </button>
-              );
-            })}
-          </div>
+      {gpsSuccessToast && (
+        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>Current location updated! Qibla bearing is {qiblaDirection}°.</span>
         </div>
       )}
 
-      {/* ============================================================ */}
-      {/* 4. MAIN INTERACTIVE EXPERIENCE BASED ON SELECTED MODE         */}
-      {/* ============================================================ */}
+      {/* 2. Quick Location Selector Pills */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>Current: <strong className="text-gray-900 dark:text-gray-100">{currentLocation.city}</strong></span>
+          <span className="text-[11px]">Tap city to switch:</span>
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
+          {QUICK_CITIES.map((city) => {
+            const isSelected = currentLocation.city === city.city;
+            return (
+              <button
+                key={city.city}
+                onClick={() => {
+                  setCurrentLocation({
+                    city: city.city,
+                    country: city.country,
+                    lat: city.lat,
+                    lng: city.lng,
+                    isLiveGps: false,
+                    accuracy: 50,
+                    timestamp: Date.now(),
+                  });
+                }}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all border ${
+                  isSelected
+                    ? 'bg-[#0F5C4D] text-white border-[#0F5C4D] shadow-xs'
+                    : 'bg-white dark:bg-[#0D1C18] text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800 hover:border-[#0F5C4D]'
+                }`}
+              >
+                <span>{city.name}</span>
+                <span className="opacity-70 ml-1 text-[10px]">({city.qibla}°)</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {activeMode === 'compass' && (
-        /* LIVE COMPASS DIAL VIEW */
-        <div className="rounded-2xl sm:rounded-3xl p-3.5 sm:p-10 bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-md flex flex-col items-center justify-center relative overflow-hidden min-h-[380px] sm:min-h-[520px]">
-          {/* Subtle Arabesque Motif in Background */}
-          <div className="absolute inset-0 bg-islamic-pattern opacity-15 pointer-events-none" />
-
-          {/* DYNAMIC TURN GUIDANCE BANNER */}
-          <div
-            className={`mb-3 sm:mb-6 px-3.5 py-1.5 sm:px-6 sm:py-3 rounded-full text-[11px] sm:text-sm font-black tracking-wide uppercase flex items-center gap-1.5 sm:gap-2.5 transition-all duration-300 shadow-md ${
-              turnGuidance.status === 'aligned'
-                ? 'bg-emerald-600 text-white shadow-emerald-500/40 scale-105 ring-2 sm:ring-4 ring-emerald-400/40 animate-pulse'
-                : turnGuidance.status === 'turn_right'
-                ? 'bg-amber-500 text-white shadow-amber-500/20'
-                : 'bg-teal-700 text-white shadow-teal-700/20'
-            }`}
+      {/* iOS Sensor Permission Alert */}
+      {needsIosPermission && !sensorAvailable && (
+        <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 flex items-center justify-between gap-3 text-xs">
+          <span className="text-amber-900 dark:text-amber-200 font-medium">
+            iPhone compass sensor requires one-time permission.
+          </span>
+          <button
+            onClick={handleRequestIosPermission}
+            className="px-3 py-1.5 rounded-lg bg-amber-600 text-white font-bold text-xs shrink-0"
           >
-            {turnGuidance.status === 'aligned' ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-bounce" />
-                <span>{t('facingKaaba').toUpperCase()}</span>
-              </>
-            ) : turnGuidance.status === 'turn_right' ? (
-              <>
-                <span>{t('turnRight').toUpperCase()} {turnGuidance.degrees}°</span>
-                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white animate-pulse" />
-              </>
-            ) : (
-              <>
-                <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white animate-pulse" />
-                <span>{t('turnLeft').toUpperCase()} {turnGuidance.degrees}°</span>
-              </>
-            )}
-          </div>
+            Enable Sensor
+          </button>
+        </div>
+      )}
 
-          {/* LARGE COMPASS DIAL */}
-          <div
-            className={`relative w-56 h-56 xs:w-64 xs:h-64 sm:w-96 sm:h-96 max-w-[76vw] max-h-[76vw] rounded-full border-4 sm:border-8 transition-colors duration-500 flex items-center justify-center shadow-xl sm:shadow-2xl bg-gradient-to-b from-[#F7F5EF] to-white dark:from-[#071310] dark:to-[#0D1C18] ${
-              isFacingKaaba
-                ? 'border-emerald-500 ring-4 sm:ring-8 ring-emerald-500/25'
-                : 'border-[#0F5C4D]/15 dark:border-[#C9A45C]/25'
-            }`}
-          >
-            {/* Compass Degrees & Cardinal Ring (Rotates opposite to device heading) */}
-            <div
-              className="absolute inset-1.5 sm:inset-2 rounded-full border border-dashed border-[#0F5C4D]/25 dark:border-[#C9A45C]/30 transition-transform duration-300"
-              style={{
-                transform: `rotate(${-effectiveCompassHeading}deg)`,
-              }}
-            >
-              {/* Cardinal Markers */}
-              <span className="absolute top-1.5 sm:top-2 left-1/2 -translate-x-1/2 text-xs sm:text-sm font-black text-red-600">
-                N
-              </span>
-              <span className="absolute bottom-1.5 sm:bottom-2 left-1/2 -translate-x-1/2 text-xs sm:text-sm font-black text-gray-500">
-                S
-              </span>
-              <span className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-xs sm:text-sm font-black text-gray-500">
-                E
-              </span>
-              <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-xs sm:text-sm font-black text-gray-500">
-                W
-              </span>
-
-              {/* Degrees Tick lines */}
-              <span className="absolute top-1/4 right-2 text-[8px] sm:text-[9px] font-mono text-gray-400">45° NE</span>
-              <span className="absolute bottom-1/4 right-2 text-[8px] sm:text-[9px] font-mono text-gray-400">135° SE</span>
-              <span className="absolute bottom-1/4 left-2 text-[8px] sm:text-[9px] font-mono text-gray-400">225° SW</span>
-              <span className="absolute top-1/4 left-2 text-[8px] sm:text-[9px] font-mono text-gray-400">315° NW</span>
+      {/* 3. Central Compass Card */}
+      <div
+        className={`p-6 rounded-3xl border text-center transition-all shadow-sm relative overflow-hidden flex flex-col items-center justify-center ${
+          isAligned
+            ? 'bg-emerald-500/10 border-emerald-500/50 dark:bg-emerald-950/20 shadow-emerald-500/10'
+            : 'bg-white dark:bg-[#0D1C18] border-gray-200 dark:border-gray-800'
+        }`}
+      >
+        {/* Alignment status banner */}
+        <div className="mb-4">
+          {isAligned ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-xs">
+              <Check className="w-3.5 h-3.5" />
+              <span>Facing Qibla (Kaaba)</span>
             </div>
+          ) : turnGuidance.status === 'turn_right' ? (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs font-bold">
+              <span>Turn {turnGuidance.degrees}° to your right</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#0F5C4D] dark:text-[#C9A45C]" />
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 text-xs font-bold">
+              <ArrowLeft className="w-3.5 h-3.5 text-[#0F5C4D] dark:text-[#C9A45C]" />
+              <span>Turn {turnGuidance.degrees}° to your left</span>
+            </div>
+          )}
+        </div>
 
-            {/* Inner Sacred Gold Ring */}
-            <div className="absolute inset-7 sm:inset-10 rounded-full border sm:border-2 border-[#C9A45C]/40 pointer-events-none" />
+        {/* Circular Compass Dial */}
+        <div className="relative w-64 h-64 sm:w-72 sm:h-72 my-2 select-none flex items-center justify-center">
+          {/* Compass outer dial ring (rotates counter to heading) */}
+          <div
+            className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-black/20 flex items-center justify-center transition-transform duration-100 ease-out"
+            style={{ transform: `rotate(${-effectiveHeading}deg)` }}
+          >
+            {/* Cardinals */}
+            <span className="absolute top-2 text-xs font-black text-red-600">N</span>
+            <span className="absolute right-3 text-xs font-bold text-gray-400">E</span>
+            <span className="absolute bottom-2 text-xs font-bold text-gray-400">S</span>
+            <span className="absolute left-3 text-xs font-bold text-gray-400">W</span>
 
-            {/* Current Device Top Indicator Needle (Phone Forward Heading) */}
-            <div className="absolute top-0.5 sm:top-1 w-2 sm:w-2.5 h-2.5 sm:h-3 bg-red-600 rounded-b-md shadow-sm pointer-events-none z-20" />
-
-            {/* KAABA POINTER NEEDLE */}
-            <div
-              className="absolute inset-0 flex items-center justify-center transition-transform duration-300"
-              style={{
-                transform: `rotate(${kaabaRelativeAngle}deg)`,
-              }}
-            >
-              {/* Top pointer head */}
-              <div className="absolute top-2 sm:top-3 flex flex-col items-center">
-                {/* Kaaba Minimal Box with Gold Kiswah Band */}
-                <div
-                  className={`w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-black border sm:border-2 shadow-2xl flex items-center justify-center relative transition-all duration-300 ${
-                    isFacingKaaba
-                      ? 'border-emerald-400 scale-105 sm:scale-110 shadow-emerald-500/50'
-                      : 'border-[#C9A45C]'
-                  }`}
-                >
-                  <span className="w-5 sm:w-6 h-0.5 bg-[#C9A45C] absolute top-1.5 sm:top-2" />
-                  <span className="text-[9px] sm:text-[10px] font-black text-[#C9A45C] font-arabic">كعبة</span>
-                </div>
-                <div
-                  className={`w-0 h-0 border-l-[6px] sm:border-l-[8px] border-l-transparent border-r-[6px] sm:border-r-[8px] border-r-transparent border-t-[8px] sm:border-t-[10px] mt-0.5 sm:mt-1 ${
-                    isFacingKaaba ? 'border-t-emerald-500' : 'border-t-[#C9A45C]'
-                  }`}
-                />
-              </div>
-
-              {/* Center Pivot Axis */}
+            {/* Dial marks */}
+            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
               <div
-                className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full border-2 sm:border-4 shadow-lg z-10 flex items-center justify-center transition-colors ${
-                  isFacingKaaba
-                    ? 'bg-emerald-600 border-white'
-                    : 'bg-[#0F5C4D] border-white dark:border-[#C9A45C]'
-                }`}
-              >
-                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[#C9A45C]" />
-              </div>
-
-              {/* Bottom Counterweight needle */}
-              <div className="absolute bottom-4 sm:bottom-6 w-1 h-6 sm:h-10 bg-gray-400/40 rounded-full" />
-            </div>
-
-            {/* Center Qibla Degrees Readout */}
-            <div className="absolute bottom-8 sm:bottom-14 text-center select-none pointer-events-none">
-              <div className="text-xl sm:text-3xl font-black font-mono text-gray-900 dark:text-gray-100">
-                {qiblaDirection}°
-              </div>
-            </div>
-          </div>
-
-          {/* SENSOR STATUS & MANUAL CALIBRATION BAR */}
-          <div className="mt-4 sm:mt-8 flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2]">
-            <div className="flex items-center gap-1.5 font-medium text-center">
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  sensorAvailable ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-                }`}
+                key={deg}
+                className="absolute w-0.5 h-2 bg-gray-300 dark:bg-gray-600 top-1"
+                style={{
+                  transformOrigin: '50% 124px',
+                  transform: `rotate(${deg}deg)`,
+                }}
               />
-              <span>
-                {sensorAvailable
-                  ? 'Hardware magnetometer active • Real-time orientation'
-                  : 'Desktop / Sensor Inactive: Heading simulated to North. Use slider below.'}
-              </span>
-            </div>
+            ))}
+          </div>
 
-            {/* Manual Heading Slider for Desktop or browsers without hardware magnetometer */}
-            {!sensorAvailable && (
-              <div className="flex items-center gap-2 bg-[#F7F5EF] dark:bg-[#071310] px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-xl border border-gray-200 dark:border-gray-800">
-                <Sliders className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0F5C4D]" />
-                <span className="text-[10px] font-bold">Heading:</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="360"
-                  value={manualOffset}
-                  onChange={(e) => setManualOffset(Number(e.target.value))}
-                  className="w-20 sm:w-24 accent-[#0F5C4D]"
-                />
-                <span className="text-[10px] font-mono font-bold">{manualOffset}°</span>
-                <button
-                  onClick={() => setManualOffset(0)}
-                  className="text-[9px] text-[#0F5C4D] hover:underline font-bold"
-                >
-                  Reset
-                </button>
+          {/* Golden Kaaba Needle (rotates to kaabaRelativeAngle) */}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-transform duration-100 ease-out"
+            style={{ transform: `rotate(${kaabaRelativeAngle}deg)` }}
+          >
+            {/* Needle Pointing to Kaaba */}
+            <div className="flex flex-col items-center -mt-24">
+              <div className="w-9 h-9 rounded-full bg-[#C9A45C] text-[#071310] flex items-center justify-center shadow-md p-1.5 border-2 border-white dark:border-[#0D1C18]">
+                <KaabaLogo className="w-full h-full" />
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeMode === 'map' && (
-        /* MAP QIBLA FLIGHT RAY VIEW */
-        <div className="rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-md space-y-3 sm:space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <h3 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 sm:gap-2">
-                <Map className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#C9A45C]" />
-                <span>Geodesic Flight Ray from {currentLocation.city} to Holy Kaaba</span>
-              </h3>
-              <p className="text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2]">
-                Spherical great-circle azimuth: {qiblaDirection}° • Distance: {distanceToKaaba.toLocaleString()} km
-              </p>
+              <div className="w-1 h-14 bg-gradient-to-b from-[#C9A45C] to-transparent rounded-full mt-0.5" />
             </div>
-
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&origin=${currentLocation.lat},${currentLocation.lng}&destination=${KAABA_COORDINATES.lat},${KAABA_COORDINATES.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl bg-[#0F5C4D] text-white text-[11px] sm:text-xs font-bold flex items-center gap-1.5 w-fit"
-            >
-              <span>Open in Google Maps</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
 
-          {/* Interactive SVG Geodesic Flight Diagram */}
-          <div className="h-64 sm:h-80 rounded-xl sm:rounded-2xl bg-[#091512] relative overflow-hidden border border-gray-200 dark:border-gray-800 flex items-center justify-center p-3 sm:p-6">
-            <svg className="w-full h-full" viewBox="0 0 400 240">
-              <defs>
-                <pattern id="qiblaGridUnified" width="25" height="25" patternUnits="userSpaceOnUse">
-                  <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(201,164,92,0.12)" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="400" height="240" fill="url(#qiblaGridUnified)" />
-
-              {/* Connecting Geodesic Vector */}
-              <line
-                x1="80"
-                y1="80"
-                x2="320"
-                y2="170"
-                stroke="#C9A45C"
-                strokeWidth="3.5"
-                strokeDasharray="6 4"
-                className="animate-pulse"
-              />
-
-              {/* Current Location Point */}
-              <g transform="translate(80, 80)">
-                <circle r="12" fill="#0F5C4D" stroke="#ffffff" strokeWidth="2.5" />
-                <circle r="4" fill="#C9A45C" />
-                <text x="-35" y="-18" fill="#ffffff" fontSize="11" fontWeight="bold">
-                  {currentLocation.city}
-                </text>
-                <text x="-40" y="24" fill="#9AA9A2" fontSize="9">
-                  {currentLocation.lat.toFixed(2)}°, {currentLocation.lng.toFixed(2)}°
-                </text>
-              </g>
-
-              {/* Kaaba Point in Makkah */}
-              <g transform="translate(320, 170)">
-                <rect x="-12" y="-12" width="24" height="24" rx="4" fill="#000000" stroke="#C9A45C" strokeWidth="2.5" />
-                <line x1="-8" y1="-4" x2="8" y2="-4" stroke="#C9A45C" strokeWidth="1.5" />
-                <text x="-25" y="28" fill="#C9A45C" fontSize="11" fontWeight="bold">
-                  Holy Kaaba, Makkah
-                </text>
-                <text x="-20" y="40" fill="#9AA9A2" fontSize="9">
-                  21.42° N, 39.83° E
-                </text>
-              </g>
-
-              {/* Distance Tag on ray */}
-              <text x="175" y="115" fill="#E8DCC2" fontSize="11" fontWeight="bold">
-                {distanceToKaaba.toLocaleString()} km ({qiblaDirection}°)
-              </text>
-            </svg>
-          </div>
-
-          <p className="text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2] leading-relaxed">
-            Calculated via forward azimuth spherical trigonometry:
-            <code className="text-[#0F5C4D] dark:text-[#C9A45C] font-mono ml-1">
-              atan2(sin(Δλ), cos(φ₁)·tan(φ₂) - sin(φ₁)·cos(Δλ))
-            </code>.
-          </p>
-        </div>
-      )}
-
-      {activeMode === 'sun' && (
-        /* SUN & SHADOW RASD AL-QIBLA GUIDE */
-        <div className="rounded-2xl sm:rounded-3xl p-3.5 sm:p-8 bg-white dark:bg-[#0D1C18] border border-[#0F5C4D]/15 dark:border-[#C9A45C]/20 shadow-md space-y-3 sm:space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm sm:text-base font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-1.5 sm:gap-2">
-              <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-              <span>The Classical Sun & Shadow Method (Rasd al-Qibla)</span>
-            </h3>
-            <span className="text-[10px] sm:text-[11px] font-bold text-[#C9A45C] bg-[#C9A45C]/15 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full border border-[#C9A45C]/30">
-              Zero-Magnetic Method
+          {/* Center Readout Bubble */}
+          <div className="z-10 w-24 h-24 rounded-full bg-white dark:bg-[#0D1C18] border-2 border-gray-200 dark:border-gray-700 shadow-sm flex flex-col items-center justify-center">
+            <span className="text-xl font-black font-mono text-gray-900 dark:text-gray-100">
+              {qiblaDirection}°
+            </span>
+            <span className="text-[10px] font-bold text-[#0F5C4D] dark:text-[#C9A45C]">
+              {getCompassCardinalDirection(qiblaDirection).split(' ')[0]}
             </span>
           </div>
+        </div>
 
-          <p className="text-[11px] sm:text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-            Historically, Muslim navigators across the Arabian Sea and the Malabar coast in Kerala verified the Qibla using solar shadows without relying on magnetic compasses.
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
-            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200 space-y-1.5 sm:space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold">
-                <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400" />
-                <span>1. Universal Kaaba Solar Zenith (Twice Yearly)</span>
-              </div>
-              <p className="text-[11px] sm:text-xs leading-relaxed">
-                Twice every year (around <strong>May 27–28 at 12:18 PM Makkah Time</strong> and <strong>July 15–16 at 12:27 PM Makkah Time</strong>), the sun stands precisely overhead the Kaaba at its zenith.
-              </p>
-              <p className="text-[10px] sm:text-[11px] font-medium opacity-90">
-                Any vertical rod cast in sunlight anywhere in the world will cast a shadow whose exact opposite line points directly toward the Qibla!
-              </p>
+        {/* Readout metrics below compass */}
+        <div className="mt-4 grid grid-cols-2 gap-3 w-full max-w-sm text-left">
+          <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+            <div className="text-[10px] text-gray-500 uppercase font-bold">Phone Heading</div>
+            <div className="text-sm font-extrabold text-gray-900 dark:text-gray-100 font-mono">
+              {Math.round(effectiveHeading)}° • {getCompassCardinalDirection(effectiveHeading).split(' ')[0]}
             </div>
+          </div>
 
-            <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-[#F7F5EF] dark:bg-[#071310] border border-gray-200 dark:border-gray-800 space-y-1.5 sm:space-y-2">
-              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-[#0F5C4D] dark:text-[#C9A45C]">
-                <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span>2. Daily Local Noon Solar Transit</span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2] leading-relaxed">
-                At local solar noon (Dhuhr entrance), shadows point directly Due North in the Northern hemisphere.
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-[#6B756F] dark:text-[#9AA9A2]">
-                In Kerala and India, turning directly West from North and shifting ~22° northward gives an exact visual check.
-              </p>
+          <div className="p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+            <div className="text-[10px] text-gray-500 uppercase font-bold">To Kaaba</div>
+            <div className="text-sm font-extrabold text-[#0F5C4D] dark:text-[#C9A45C] font-mono">
+              {distanceToKaaba.toLocaleString()} km
             </div>
           </div>
         </div>
-      )}
 
-      {/* ============================================================ */}
-      {/* 5. HELPFUL TRAVEL ADVICE CARDS FOR CURRENT LOCATION           */}
-      {/* ============================================================ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-4">
-        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 space-y-1 sm:space-y-1.5 shadow-sm">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-[#0F5C4D] dark:text-[#C9A45C]">
-            <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Kerala & South India Qibla Heading</span>
-          </div>
-          <p className="text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2] leading-relaxed">
-            From Kerala (Kochi, Kozhikode, Malappuram, Wayanad), the Qibla is consistently <strong>West-Northwest (292°–294°)</strong>. From North India (Delhi), it lies towards <strong>280° (West)</strong>.
-          </p>
-        </div>
-
-        <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white dark:bg-[#0D1C18] border border-gray-200 dark:border-gray-800 space-y-1 sm:space-y-1.5 shadow-sm">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-[#0F5C4D] dark:text-[#C9A45C]">
-            <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span>Preventing Magnetic Interference</span>
-          </div>
-          <p className="text-[11px] sm:text-xs text-[#6B756F] dark:text-[#9AA9A2] leading-relaxed">
-            Inside reinforced concrete buildings or near metallic train tracks, wave your device in a figure-8 motion (∞) for 5 seconds to recalibrate the magnetometer.
-          </p>
+        {/* Gentle Sensor Hint or Simulator Slider */}
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800/60 w-full max-w-sm">
+          {!sensorAvailable ? (
+            <div className="space-y-1.5 text-left">
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>Simulate phone rotation:</span>
+                <span className="font-mono font-bold">{manualHeading}°</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="360"
+                value={manualHeading}
+                onChange={(e) => setManualHeading(Number(e.target.value))}
+                className="w-full accent-[#0F5C4D]"
+              />
+              <p className="text-[10px] text-gray-400 text-center">
+                (On mobile devices with compass sensors, the dial rotates automatically)
+              </p>
+            </div>
+          ) : (
+            <p className="text-[11px] text-gray-400">
+              Hold phone flat horizontally for the most accurate direction reading.
+            </p>
+          )}
         </div>
       </div>
-
-      {/* ============================================================ */}
-      {/* 6. SENSOR CALIBRATION MODAL                                  */}
-      {/* ============================================================ */}
-      {calibrationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white dark:bg-[#0D1C18] rounded-3xl max-w-md w-full p-6 space-y-4 border border-[#0F5C4D]/20 dark:border-[#C9A45C]/30 shadow-2xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-extrabold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <RotateCw className="w-5 h-5 text-[#C9A45C]" />
-                <span>Compass Calibration Guide</span>
-              </h3>
-              <button
-                onClick={() => setCalibrationModalOpen(false)}
-                className="text-xs text-gray-500 hover:text-gray-700 font-bold"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="text-xs text-gray-700 dark:text-gray-300 space-y-3 leading-relaxed">
-              <p>
-                Mobile compass sensors (magnetometer & gyroscope) can be affected by metal objects,
-                laptop speakers, or magnetic phone cases.
-              </p>
-
-              {/* Figure 8 motion diagram */}
-              <div className="p-4 rounded-2xl bg-[#F7F5EF] dark:bg-[#071310] border border-gray-200 dark:border-gray-800 text-center space-y-2">
-                <div className="w-16 h-10 border-4 border-dashed border-[#0F5C4D] dark:border-[#C9A45C] rounded-full mx-auto transform -rotate-12 animate-pulse" />
-                <span className="text-[11px] font-bold text-[#0F5C4D] dark:text-[#C9A45C] block">
-                  Wave your device in a smooth Figure-8 motion (∞)
-                </span>
-              </div>
-
-              <ul className="list-disc pl-4 space-y-1 text-[11px] text-[#6B756F] dark:text-[#9AA9A2]">
-                <li>Hold your phone flat and level with the ground.</li>
-                <li>Stay away from large metallic structures or strong electrical magnets.</li>
-                <li>Tap calibrate to grant orientation permission if requested by your browser.</li>
-              </ul>
-            </div>
-
-            <button
-              onClick={() => {
-                handleCalibrate();
-                setCalibrationModalOpen(false);
-              }}
-              className="w-full py-2.5 rounded-xl bg-[#0F5C4D] hover:bg-[#083C34] text-white text-xs font-bold shadow-md shadow-[#0F5C4D]/25"
-            >
-              Start Calibration
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

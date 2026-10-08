@@ -98,7 +98,7 @@ export const AddPlaceModal: React.FC = () => {
                 required
                 value={placeName}
                 onChange={(e) => setPlaceName(e.target.value)}
-                placeholder="e.g. Sultanahmet Mescidi or Istanbul Doner House"
+                placeholder="e.g. Cheraman Juma Masjid or Paragon Restaurant Kozhikode"
                 className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#071310] border border-gray-200 dark:border-gray-800 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#0F5C4D]"
               />
             </div>

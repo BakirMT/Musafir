@@ -95,7 +95,7 @@ const MainContent: React.FC = () => {
         <Sidebar />
 
         {/* Dynamic View Body with safe bottom padding for mobile navigation */}
-        <main className="flex-1 p-3 sm:p-5 lg:p-8 pb-24 md:pb-8 overflow-y-auto overflow-x-hidden min-w-0 w-full max-w-full">
+        <main className="flex-1 p-3 sm:p-5 lg:p-8 pb-16 md:pb-8 overflow-y-auto overflow-x-hidden min-w-0 w-full max-w-full">
           {renderCurrentView()}
         </main>
       </div>

@@ -5,90 +5,97 @@ import { CloudSun, Droplets, Wind, Sunrise, Sunset, AlertCircle } from 'lucide-r
 export const WeatherWidget: React.FC = () => {
   const { currentLocation, prayerTimes } = useApp();
 
-  // City-tailored realistic weather presets
+  // City-tailored realistic weather presets for Kerala and pilgrimage hubs
   const getWeatherForCity = (city: string) => {
-    switch (city) {
-      case 'Istanbul':
-        return {
-          temp: 19,
-          condition: 'Partly Sunny & Mild',
-          humidity: 64,
-          wind: '14 km/h NNE',
-          alert: 'Ideal weather for walking between Sultanahmet mosques. Light breeze near the Bosphorus shoreline.',
-          high: 22,
-          low: 14,
-        };
-      case 'Makkah':
-        return {
-          temp: 36,
-          condition: 'Sunny & Hot',
-          humidity: 28,
-          wind: '9 km/h E',
-          alert: 'High midday heat. Recommended to perform Tawaf after Isha or early morning Fajr; stay well hydrated.',
-          high: 40,
-          low: 29,
-        };
-      case 'Madinah':
-        return {
-          temp: 32,
-          condition: 'Clear Skies',
-          humidity: 22,
-          wind: '11 km/h NE',
-          alert: 'Pleasant evening courtyard conditions at Al-Masjid an-Nabawi. Shaded umbrellas open during daytime.',
-          high: 35,
-          low: 24,
-        };
-      case 'Kochi (Kerala)':
-        return {
-          temp: 29,
-          condition: 'Tropical Coastal Breeze',
-          humidity: 76,
-          wind: '10 km/h W',
-          alert: 'Pleasant tropical breeze along Fort Kochi shores. Great weather for visiting Mattancherry & Cheraman Juma Masjid.',
-          high: 31,
-          low: 24,
-        };
-      case 'Kozhikode (Calicut)':
-        return {
-          temp: 28,
-          condition: 'Warm & Palm Breeze',
-          humidity: 74,
-          wind: '11 km/h SW',
-          alert: 'Serene coastal atmosphere in Kuttichira. Ideal for evening prayer at historic Mishkal Mosque and beachside Malabar dining.',
-          high: 31,
-          low: 24,
-        };
-      case 'New Delhi':
-        return {
-          temp: 27,
-          condition: 'Sunny & Clear',
-          humidity: 48,
-          wind: '9 km/h NW',
-          alert: 'Comfortable daytime weather for visiting historic Jama Masjid courtyard and Chandni Chowk.',
-          high: 30,
-          low: 19,
-        };
-      case 'London':
-        return {
-          temp: 14,
-          condition: 'Light Showers',
-          humidity: 78,
-          wind: '18 km/h W',
-          alert: 'Carry a compact umbrella for walking to Regent’s Park Mosque.',
-          high: 16,
-          low: 10,
-        };
-      default:
-        return {
-          temp: 24,
-          condition: 'Pleasant & Clear',
-          humidity: 55,
-          wind: '12 km/h',
-          alert: 'Favorable conditions for local exploration and congregation prayers.',
-          high: 26,
-          low: 18,
-        };
+    const cLower = city.toLowerCase();
+
+    if (cLower.includes('kozhikode') || cLower.includes('calicut')) {
+      return {
+        temp: 29,
+        condition: 'Warm & Malabar Coast Breeze',
+        humidity: 74,
+        wind: '11 km/h SW',
+        alert: 'Serene coastal atmosphere in Kuttichira. Ideal for evening prayer at historic Mishkal Mosque and beachside Malabar dining.',
+        high: 32,
+        low: 24,
+      };
     }
+    if (cLower.includes('mannarkkad') || cLower.includes('palakkad')) {
+      return {
+        temp: 30,
+        condition: 'Sunny with Western Ghats Breeze',
+        humidity: 68,
+        wind: '9 km/h ENE',
+        alert: 'Warm sunny weather near Silent Valley foothills. Clean mountain air and pleasant prayer conditions.',
+        high: 33,
+        low: 23,
+      };
+    }
+    if (cLower.includes('malappuram') || cLower.includes('ponnani') || cLower.includes('tirur')) {
+      return {
+        temp: 29,
+        condition: 'Tropical Coastal Breeze',
+        humidity: 76,
+        wind: '12 km/h W',
+        alert: 'Pleasant evening atmosphere in historic Ponnani port and Biyyam Kayal waterside.',
+        high: 32,
+        low: 24,
+      };
+    }
+    if (cLower.includes('kochi') || cLower.includes('kodungallur') || cLower.includes('ernakulam')) {
+      return {
+        temp: 30,
+        condition: 'Tropical Coastal Breeze',
+        humidity: 78,
+        wind: '13 km/h WSW',
+        alert: 'Pleasant sea breeze along Fort Kochi and Muziris. Ideal for visiting Cheraman Juma Masjid (629 CE).',
+        high: 32,
+        low: 25,
+      };
+    }
+    if (cLower.includes('wayanad') || cLower.includes('munnar')) {
+      return {
+        temp: 22,
+        condition: 'Cool Mist & Hill Station Breeze',
+        humidity: 82,
+        wind: '8 km/h NE',
+        alert: 'Refreshing mountain climate. Comfortable cool weather for rainforest travel and peaceful prayer.',
+        high: 25,
+        low: 17,
+      };
+    }
+    if (cLower.includes('kannur') || cLower.includes('thalassery') || cLower.includes('kasaragod')) {
+      return {
+        temp: 29,
+        condition: 'Tropical Coastal Sunshine',
+        humidity: 75,
+        wind: '12 km/h SW',
+        alert: 'Warm North Malabar coastal breeze. Great for visiting Madayi Palli and Thalassery waterfront.',
+        high: 32,
+        low: 24,
+      };
+    }
+    if (cLower.includes('makkah')) {
+      return {
+        temp: 36,
+        condition: 'Sunny & Warm',
+        humidity: 28,
+        wind: '9 km/h E',
+        alert: 'Stay hydrated during daytime; pleasant conditions for courtyard prayers after Isha.',
+        high: 40,
+        low: 29,
+      };
+    }
+
+    return {
+      temp: 28,
+      condition: 'Tropical Warm & Pleasant',
+      humidity: 72,
+      wind: '10 km/h W',
+      alert: 'Favorable tropical Kerala weather for local travel and congregational prayers.',
+      high: 31,
+      low: 24,
+    };
   };
 
   const weather = getWeatherForCity(currentLocation.city);

@@ -87,7 +87,7 @@ export const PrayerTimesView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
+    <div className="max-w-4xl mx-auto space-y-6 pb-4 sm:pb-6 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -288,8 +288,8 @@ export const PrayerTimesView: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <Bell className="w-4 h-4 text-[#C9A45C] shrink-0" />
           <span className="text-[#17211E] dark:text-[#E8DCC2]">
-            <strong>Friday Reminder: </strong>Jumu'ah khutbah in Istanbul typically commences at
-            13:00. Arrive early for Sunnah tahiyyatul masjid.
+            <strong>Friday Reminder: </strong>Jumu'ah khutbah across Kerala typically commences between
+            12:45 PM and 1:15 PM with Malayalam guidance. Arrive early for Surah Al-Kahf & Tahiyyatul Masjid.
           </span>
         </div>
 

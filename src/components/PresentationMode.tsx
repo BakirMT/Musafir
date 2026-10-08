@@ -133,7 +133,7 @@ const STEPS: Step[] = [
     description:
       'Country-specific emergency dispatch directory. One-tap dialing for Police, Ambulance, Fire, Tourist Police, and local English/Arabic-speaking hospitals with GPS broadcast.',
     highlights: [
-      'Automatic country directory (Türkiye, Saudi Arabia, UAE, UK, US, etc.)',
+      'Automatic country directory (India / Kerala 112, Saudi Arabia, UAE, etc.)',
       'One-tap GPS coordinates copy & emergency share link',
       'Consular and multilingual hospital contacts',
     ],

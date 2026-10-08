@@ -137,7 +137,7 @@ export const HajjUmrahView: React.FC = () => {
   });
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-16 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
+    <div className="max-w-5xl mx-auto space-y-6 pb-4 sm:pb-6 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header Banner */}
       <div className="rounded-3xl p-5 sm:p-7 bg-gradient-to-br from-[#0F5C4D] via-[#0b483c] to-[#083C34] text-white shadow-xl shadow-[#0F5C4D]/25 relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-48 sm:w-72 bg-islamic-pattern opacity-10 pointer-events-none" />

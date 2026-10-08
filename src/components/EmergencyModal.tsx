@@ -20,11 +20,11 @@ export const EmergencyModal: React.FC = () => {
   const { emergencyModalOpen, setEmergencyModalOpen, currentLocation } = useApp();
 
   const [selectedCountry, setSelectedCountry] = useState(
-    currentLocation.country === 'Türkiye' || currentLocation.country === 'Turkey'
-      ? 'Türkiye'
+    currentLocation.country === 'India'
+      ? 'India'
       : EMERGENCY_DIRECTORY[currentLocation.country]
       ? currentLocation.country
-      : 'Türkiye'
+      : 'India'
   );
 
   const [copied, setCopied] = useState(false);
@@ -32,7 +32,7 @@ export const EmergencyModal: React.FC = () => {
 
   if (!emergencyModalOpen) return null;
 
-  const contacts = EMERGENCY_DIRECTORY[selectedCountry] || EMERGENCY_DIRECTORY['Türkiye'];
+  const contacts = EMERGENCY_DIRECTORY[selectedCountry] || EMERGENCY_DIRECTORY['India'];
 
   const coordinatesString = `${currentLocation.lat.toFixed(5)}° N, ${currentLocation.lng.toFixed(5)}° E`;
 

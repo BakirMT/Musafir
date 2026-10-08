@@ -113,3 +113,30 @@ export function getTurnGuidance(
     };
   }
 }
+
+/**
+ * Computes tilt-compensated compass heading from 3D Euler angles (alpha, beta, gamma).
+ * Works across Android Chrome deviceorientationabsolute and iOS CoreMotion.
+ */
+export function calculateTiltCompensatedHeading(
+  alpha: number,
+  beta: number,
+  gamma: number
+): number {
+  const degToRad = Math.PI / 180;
+  const a = alpha * degToRad;
+  const b = beta * degToRad;
+  const g = gamma * degToRad;
+
+  // Unit vector along device Y-axis (pointing out the top of the phone)
+  // in World coordinates (East, North, Up):
+  const y_east = -Math.sin(a) * Math.cos(g) - Math.cos(a) * Math.sin(b) * Math.sin(g);
+  const y_north = Math.cos(a) * Math.cos(g) - Math.sin(a) * Math.sin(b) * Math.sin(g);
+
+  // Standard clockwise azimuth from North (0° = N, 90° = E, 180° = S, 270° = W)
+  let heading = Math.atan2(y_east, y_north) * (180 / Math.PI);
+  heading = (heading + 360) % 360;
+
+  return Math.round(heading * 10) / 10;
+}
+

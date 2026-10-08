@@ -29,7 +29,7 @@ export interface PrayerTimesData {
   methodName: string;
 }
 
-export type Madhhab = 'Shafi' | 'Hanafi';
+export type Madhhab = 'Shafi' | 'Shafi\'i' | 'Hanafi';
 export type CalculationMethodId = 'MWL' | 'ISNA' | 'Egypt' | 'Makkah' | 'Karachi' | 'Diyanet';
 
 export interface CalculationMethod {
@@ -47,8 +47,8 @@ export type HalalVerificationLevel = 'verified' | 'community' | 'unverified';
 export interface Place {
   id: string;
   name: string;
-  city?: string;
-  country?: string;
+  city: string;
+  country: string;
   category: PlaceCategory;
   cuisine?: string;
   rating: number;
@@ -61,12 +61,15 @@ export interface Place {
   openNow: boolean;
   openingHours?: string;
   halalStatus?: HalalVerificationLevel;
-  facilities: string[];
+  halalCertification?: string;
+  hasPrayerSpace?: boolean;
+  popularDishes?: string[];
+  facilities?: string[];
   hasWomensArea?: boolean;
   hasWuduArea?: boolean;
   hasWheelchairAccess?: boolean;
   jumuaTime?: string;
-  priceRange?: '€' | '€€' | '€€€' | '€€€€' | '$' | '$$' | '$$$';
+  priceRange?: '€' | '€€' | '€€€' | '€€€€' | '$' | '$$' | '$$$' | '₹' | '₹₹' | '₹₹₹' | '₹₹₹₹' | '₹₹₹₹₹';
   phone?: string;
   qiblaAvailable?: boolean;
   alcoholFree?: boolean;

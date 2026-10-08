@@ -24,30 +24,30 @@ export const LandingPage: React.FC = () => {
       {/* Hero Section */}
       <section className="relative pt-20 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto overflow-hidden">
         {/* Subtle Islamic Geometric Pattern Background Accent */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-gradient-to-tr from-[#0F5C4D]/10 via-[#C9A45C]/15 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-[350px] sm:w-[700px] sm:h-[700px] bg-gradient-to-tr from-[#0F5C4D]/10 via-[#C9A45C]/15 to-transparent rounded-full blur-3xl pointer-events-none -z-10" />
 
         <div className="text-center max-w-3xl mx-auto space-y-6">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0F5C4D]/10 dark:bg-[#C9A45C]/15 border border-[#0F5C4D]/20 dark:border-[#C9A45C]/30 text-xs font-bold text-[#0F5C4D] dark:text-[#C9A45C] shadow-sm">
             <Compass className="w-3.5 h-3.5 animate-spin-slow" />
-            <span>THE NEXT GENERATION OF MUSLIM TRAVEL</span>
+            <span>KERALA MUSLIM TRAVEL & PRAYER COMPANION</span>
           </div>
 
           {/* Main Title */}
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-[#0F5C4D] dark:text-[#E8DCC2] leading-[1.15]">
-            MUSAFIR
+            MUSAFIR KERALA
             <span className="block text-2xl sm:text-3xl font-extrabold text-[#C9A45C] mt-2 font-sans">
-              Your Complete Muslim Travel Companion
+              മുസാഫിർ കേരളം • Travel Far. Pray Anywhere.
             </span>
           </h1>
 
           {/* Tagline & Subtitle */}
           <p className="text-lg sm:text-xl font-medium text-[#6B756F] dark:text-[#9AA9A2] max-w-2xl mx-auto leading-relaxed">
-            “Travel Far. Pray Anywhere. Stay Connected.”
+            “Accurate Kerala Prayer Times, Historic Mosques, Malabar Halal Cuisine & Qibla Direction.”
           </p>
 
           <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 max-w-xl mx-auto">
-            Everything you need to travel, pray, explore and stay connected — wherever you are in the world.
+            From Cheraman Juma Masjid in Kodungallur to the historic wooden Mishkal Palli in Kuttichira Kozhikode and Ponnani, explore God’s Own Country with confidence.
           </p>
 
           {/* Call to Actions */}

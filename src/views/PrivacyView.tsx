@@ -6,7 +6,7 @@ export const PrivacyView: React.FC = () => {
   const { setActiveTab } = useApp();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
+    <div className="max-w-4xl mx-auto space-y-6 pb-4 sm:pb-6 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button

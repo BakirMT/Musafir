@@ -17,6 +17,11 @@ import { INITIAL_PLACES } from '../services/placesData';
 import { DEFAULT_CHECKLIST, DEMO_TRIP, KERALA_TRIP, INITIAL_EXPENSES } from '../services/travelDefaults';
 import { TranslationKey, getTranslation } from '../services/translations';
 import { bundleCityForOffline } from '../services/offlineService';
+import {
+  HijriCalculationMethodId,
+  HijriDateDetails,
+  getDetailedHijriDate,
+} from '../services/hijriService';
 
 export type ActiveTab =
   | 'landing'
@@ -37,40 +42,32 @@ export type ActiveTab =
   | 'privacy';
 
 export const GLOBAL_CITIES: LocationInfo[] = [
-  // Kerala, India
-  { city: 'Kochi (Kerala)', country: 'India', lat: 9.9312, lng: 76.2673 },
+  // Kerala Districts & Cultural Hubs
   { city: 'Kozhikode (Calicut)', country: 'India', lat: 11.2588, lng: 75.7804 },
-  { city: 'Malappuram (Kerala)', country: 'India', lat: 11.051, lng: 76.0711 },
-  { city: 'Ponnani (Kerala)', country: 'India', lat: 10.7672, lng: 75.925 },
-  { city: 'Wayanad (Kerala)', country: 'India', lat: 11.6103, lng: 76.0827 },
-  { city: 'Kannur (Kerala)', country: 'India', lat: 11.8745, lng: 75.3704 },
-  { city: 'Kasaragod (Kerala)', country: 'India', lat: 12.5102, lng: 74.9852 },
-  { city: 'Thiruvananthapuram', country: 'India', lat: 8.5241, lng: 76.9366 },
+  { city: 'Mannarkkad (Palakkad)', country: 'India', lat: 10.9888, lng: 76.4608 },
+  { city: 'Malappuram', country: 'India', lat: 11.051, lng: 76.0711 },
+  { city: 'Ponnani', country: 'India', lat: 10.7672, lng: 75.925 },
+  { city: 'Kochi (Ernakulam)', country: 'India', lat: 9.9312, lng: 76.2673 },
+  { city: 'Kodungallur (Thrissur)', country: 'India', lat: 10.2155, lng: 76.2003 },
+  { city: 'Kannur', country: 'India', lat: 11.8745, lng: 75.3704 },
+  { city: 'Thalassery', country: 'India', lat: 11.7511, lng: 75.4925 },
+  { city: 'Wayanad (Kalpetta)', country: 'India', lat: 11.6055, lng: 76.0825 },
+  { city: 'Palakkad', country: 'India', lat: 10.7867, lng: 76.6548 },
+  { city: 'Kasaragod', country: 'India', lat: 12.5102, lng: 74.9852 },
+  { city: 'Thrissur', country: 'India', lat: 10.5276, lng: 76.2144 },
   { city: 'Alappuzha (Alleppey)', country: 'India', lat: 9.4981, lng: 76.3388 },
-  { city: 'Munnar (Kerala)', country: 'India', lat: 10.0889, lng: 77.0595 },
-  { city: 'Palakkad (Kerala)', country: 'India', lat: 10.7867, lng: 76.6548 },
-  { city: 'Thrissur (Kodungallur)', country: 'India', lat: 10.5276, lng: 76.2144 },
+  { city: 'Thiruvananthapuram', country: 'India', lat: 8.5241, lng: 76.9366 },
+  { city: 'Kollam', country: 'India', lat: 8.8932, lng: 76.6141 },
+  { city: 'Kottayam', country: 'India', lat: 9.5916, lng: 76.5222 },
+  { city: 'Munnar', country: 'India', lat: 10.0889, lng: 77.0595 },
+  { city: 'Perinthalmanna', country: 'India', lat: 10.976, lng: 76.2254 },
+  { city: 'Tirur', country: 'India', lat: 10.9146, lng: 75.9224 },
+  { city: 'Vatakara', country: 'India', lat: 11.6083, lng: 75.5917 },
 
-  // India - Other Major Metros & Historic Hubs
-  { city: 'New Delhi', country: 'India', lat: 28.6139, lng: 77.209 },
-  { city: 'Hyderabad', country: 'India', lat: 17.385, lng: 78.4867 },
-  { city: 'Mumbai', country: 'India', lat: 19.076, lng: 72.8777 },
-  { city: 'Bengaluru', country: 'India', lat: 12.9716, lng: 77.5946 },
-  { city: 'Srinagar (Kashmir)', country: 'India', lat: 34.0837, lng: 74.7973 },
-  { city: 'Chennai', country: 'India', lat: 13.0827, lng: 80.2707 },
-  { city: 'Kolkata', country: 'India', lat: 22.5726, lng: 88.3639 },
-  { city: 'Lucknow', country: 'India', lat: 26.8467, lng: 80.9462 },
-
-  // Global Destinations & Pilgrimage Hubs
-  { city: 'Istanbul', country: 'Türkiye', lat: 41.0082, lng: 28.9784 },
+  // Holy Pilgrimage & Global Sister Hubs
   { city: 'Makkah', country: 'Saudi Arabia', lat: 21.3891, lng: 39.8579 },
   { city: 'Madinah', country: 'Saudi Arabia', lat: 24.5247, lng: 39.5692 },
   { city: 'Dubai', country: 'United Arab Emirates', lat: 25.2048, lng: 55.2708 },
-  { city: 'Kuala Lumpur', country: 'Malaysia', lat: 3.139, lng: 101.6869 },
-  { city: 'London', country: 'United Kingdom', lat: 51.5074, lng: -0.1278 },
-  { city: 'Paris', country: 'France', lat: 48.8566, lng: 2.3522 },
-  { city: 'Tokyo', country: 'Japan', lat: 35.6762, lng: 139.6503 },
-  { city: 'New York', country: 'United States', lat: 40.7128, lng: -74.006 },
 ];
 
 interface AppContextType {
@@ -97,6 +94,13 @@ interface AppContextType {
   setUse24Hour: (use: boolean) => void;
   qiblaDirection: number;
   distanceToKaaba: number;
+
+  // Hijri Calendar Regional Calculations
+  hijriMethod: HijriCalculationMethodId;
+  setHijriMethod: (method: HijriCalculationMethodId) => void;
+  hijriDayAdjustment: number;
+  setHijriDayAdjustment: (adj: number) => void;
+  hijriDateDetails: HijriDateDetails;
 
   // Places & Saved
   places: Place[];
@@ -178,26 +182,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const [calculationMethod, setCalculationMethod] = useState<CalculationMethodId>('Diyanet');
-  const [madhhab, setMadhhab] = useState<Madhhab>('Hanafi');
+  const [calculationMethod, setCalculationMethod] = useState<CalculationMethodId>('Karachi');
+  const [madhhab, setMadhhab] = useState<Madhhab>('Shafi');
   const [use24Hour, setUse24Hour] = useState(false);
+
+  // Hijri Calendar Regional Calculation Method & Adjustment (Default: Kerala Moonsighting)
+  const [hijriMethod, setHijriMethod] = useState<HijriCalculationMethodId>(() => {
+    const saved = localStorage.getItem('musafir_hijri_method') as HijriCalculationMethodId;
+    return saved || 'kerala_hilal';
+  });
+  const [hijriDayAdjustment, setHijriDayAdjustment] = useState<number>(() => {
+    const saved = localStorage.getItem('musafir_hijri_adj');
+    return saved !== null ? parseInt(saved, 10) : 0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('musafir_hijri_method', hijriMethod);
+  }, [hijriMethod]);
+
+  useEffect(() => {
+    localStorage.setItem('musafir_hijri_adj', hijriDayAdjustment.toString());
+  }, [hijriDayAdjustment]);
 
   const [places, setPlaces] = useState<Place[]>(INITIAL_PLACES);
   const [savedPlaceIds, setSavedPlaceIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('musafir_saved_places');
-    return saved ? JSON.parse(saved) : ['mosque-1', 'food-1', 'hotel-1'];
+    return saved ? JSON.parse(saved) : ['mosque-kerala-1', 'food-kerala-1', 'hotel-kerala-1'];
   });
 
   const [trips, setTrips] = useState<Trip[]>(() => {
     const saved = localStorage.getItem('musafir_trips');
-    return saved ? JSON.parse(saved) : [DEMO_TRIP, KERALA_TRIP];
+    return saved ? JSON.parse(saved) : [KERALA_TRIP];
   });
   const [checklist, setChecklist] = useState<ChecklistItem[]>(() => {
     const saved = localStorage.getItem('musafir_checklist');
     return saved ? JSON.parse(saved) : DEFAULT_CHECKLIST;
   });
 
-  const [selectedCurrency, setSelectedCurrency] = useState('USD');
+  const [selectedCurrency, setSelectedCurrency] = useState('INR');
   const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
     const saved = localStorage.getItem('musafir_expenses');
     return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
@@ -210,10 +232,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       : [
           {
             id: 'comm-1',
-            placeName: 'Karaköy Güllüoğlu Baklava',
+            placeName: 'Zain\'s Beach Hotel & Tea Room',
             category: 'restaurant',
-            address: 'Kemankeş Karamustafa Paşa, Rıhtım Cd. No:3/4, Karaköy',
-            notes: 'Pure butter authentic baklava. 100% Halal certified, alcohol-free.',
+            address: 'Convent Cross Rd, Beach, Kozhikode, Kerala',
+            notes: 'Authentic Malabar Muslim home-style evening snacks, Chattipathiri & Unnakaya.',
             halalVerification: 'verified',
             status: 'verified',
             submittedAt: '2026-10-06T14:20:00Z',
@@ -233,7 +255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [offlineRoamingModalOpen, setOfflineRoamingModalOpen] = useState(false);
   const [downloadedPacks, setDownloadedPacks] = useState<Record<string, boolean>>(() => {
     const saved = localStorage.getItem('musafir_downloaded_packs');
-    return saved ? JSON.parse(saved) : { 'pack-makkah-madinah': true, 'pack-istanbul': true };
+    return saved ? JSON.parse(saved) : { 'pack-malabar': true, 'pack-central-kerala': true };
   });
 
   const downloadCityPack = async (packId: string, cityName: string): Promise<boolean> => {
@@ -326,7 +348,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(timer);
   }, []);
 
-  const prayerTimes = calculatePrayerTimes(
+  const hijriDateDetails = getDetailedHijriDate(now, hijriMethod, hijriDayAdjustment);
+
+  const rawPrayerTimes = calculatePrayerTimes(
     now,
     currentLocation.lat,
     currentLocation.lng,
@@ -335,18 +359,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     use24Hour
   );
 
+  const prayerTimes: PrayerTimesData = {
+    ...rawPrayerTimes,
+    hijriDate: hijriDateDetails.formatted,
+  };
+
   const qiblaDirection = calculateQiblaDirection(currentLocation.lat, currentLocation.lng);
   const distanceToKaaba = calculateDistanceToKaaba(currentLocation.lat, currentLocation.lng);
 
-  // Geolocation request
+  // Geolocation request with reverse geocode & IP fallback
   const requestRealLocation = async (): Promise<boolean> => {
     setLocationLoading(true);
     setLocationError(null);
 
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser.');
+    const tryIpFallback = async (reason: string): Promise<boolean> => {
+      try {
+        const ipRes = await fetch('/api/ip-location');
+        if (ipRes.ok) {
+          const ipData = await ipRes.json();
+          if (ipData.lat && ipData.lng) {
+            const newLoc: LocationInfo = {
+              city: ipData.city || 'Mannarkkad (Palakkad)',
+              country: ipData.country || 'India',
+              lat: ipData.lat,
+              lng: ipData.lng,
+              accuracy: 1000,
+              isLiveGps: true,
+              timestamp: Date.now(),
+            };
+            setCurrentLocation(newLoc);
+            setLocationLoading(false);
+            return true;
+          }
+        }
+      } catch {
+        // IP fallback error
+      }
+      setLocationError(reason);
       setLocationLoading(false);
       return false;
+    };
+
+    if (!navigator.geolocation) {
+      return await tryIpFallback('Geolocation is not supported by your browser.');
     }
 
     return new Promise((resolve) => {
@@ -358,37 +413,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           let countryName = 'Current Location';
 
           try {
-            // Quick reverse geocoding via OpenStreetMap Nominatim with timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000);
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`,
-              { signal: controller.signal }
-            );
-            clearTimeout(timeoutId);
+            // First try server-side reverse geocode proxy
+            const res = await fetch(`/api/reverse-geocode?lat=${lat}&lng=${lng}`);
             if (res.ok) {
               const data = await res.json();
-              const addr = data.address || {};
-              const rawCity =
-                addr.city ||
-                addr.town ||
-                addr.village ||
-                addr.suburb ||
-                addr.county ||
-                addr.state_district ||
-                addr.state ||
-                cityName;
-
-              const state = addr.state || '';
-              if (state === 'Kerala' && !rawCity.toLowerCase().includes('kerala')) {
-                cityName = `${rawCity} (Kerala)`;
-              } else {
-                cityName = rawCity;
+              if (data.city) {
+                cityName = data.city;
+                countryName = data.country || countryName;
               }
-              countryName = addr.country || countryName;
+            } else {
+              // Fallback to client-side Nominatim with timeout
+              const controller = new AbortController();
+              const timeoutId = setTimeout(() => controller.abort(), 2500);
+              const nomRes = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14`,
+                { signal: controller.signal }
+              );
+              clearTimeout(timeoutId);
+              if (nomRes.ok) {
+                const nomData = await nomRes.json();
+                const addr = nomData.address || {};
+                const county = addr.county || '';
+                const stateDistrict = addr.state_district || '';
+                const rawCity =
+                  addr.city ||
+                  addr.town ||
+                  (county.toLowerCase().includes('mannarkad') ? 'Mannarkkad' : '') ||
+                  addr.village ||
+                  county ||
+                  stateDistrict ||
+                  cityName;
+                cityName = rawCity;
+                countryName = addr.country || countryName;
+              }
             }
           } catch {
-            // Keep default coordinate label
+            // Keep default coordinate label or match closest
+          }
+
+          // If city name is still raw GPS coords, find closest known city for friendly display
+          if (cityName.startsWith('GPS (')) {
+            let closest = GLOBAL_CITIES[0];
+            let minDist = Infinity;
+            for (const c of GLOBAL_CITIES) {
+              const dLat = c.lat - lat;
+              const dLng = c.lng - lng;
+              const dist = dLat * dLat + dLng * dLng;
+              if (dist < minDist) {
+                minDist = dist;
+                closest = c;
+              }
+            }
+            if (minDist < 0.25) {
+              cityName = `${closest.city} (Live GPS)`;
+              countryName = closest.country;
+            }
           }
 
           const newLoc: LocationInfo = {
@@ -404,20 +483,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setLocationLoading(false);
           resolve(true);
         },
-        (err) => {
+        async (err) => {
           let errorMsg = 'Unable to acquire GPS signal.';
           if (err.code === 1) {
-            errorMsg = 'Location permission was denied. Please allow location access in your browser settings or choose a city below.';
+            errorMsg = 'Location permission was denied. Switched to approximate network location.';
           } else if (err.code === 2) {
-            errorMsg = 'GPS position unavailable. Please check device location sensors or select your city.';
+            errorMsg = 'GPS position unavailable. Using approximate location.';
           } else if (err.code === 3) {
-            errorMsg = 'GPS request timed out. Please check your connection or choose a preset city.';
+            errorMsg = 'GPS request timed out. Using approximate location.';
           }
-          setLocationError(errorMsg);
-          setLocationLoading(false);
-          resolve(false);
+          const success = await tryIpFallback(errorMsg);
+          resolve(success);
         },
-        { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
+        { timeout: 7000, enableHighAccuracy: true, maximumAge: 10000 }
       );
     });
   };
@@ -523,6 +601,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUse24Hour,
         qiblaDirection,
         distanceToKaaba,
+
+        hijriMethod,
+        setHijriMethod,
+        hijriDayAdjustment,
+        setHijriDayAdjustment,
+        hijriDateDetails,
 
         places,
         savedPlaceIds,

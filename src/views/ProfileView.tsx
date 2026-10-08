@@ -66,7 +66,7 @@ export const ProfileView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
+    <div className="max-w-4xl mx-auto space-y-6 pb-4 sm:pb-6 animate-in fade-in duration-200 w-full max-w-full overflow-x-hidden">
       {/* Header Profile Card */}
       <div className="p-6 rounded-3xl bg-gradient-to-r from-[#0F5C4D] via-[#0b483c] to-[#083C34] text-white shadow-xl shadow-[#0F5C4D]/25 flex flex-col sm:flex-row items-center sm:items-start gap-5 text-center sm:text-left relative overflow-hidden">
         <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#C9A45C] to-[#E8DCC2] text-[#071310] flex items-center justify-center font-black text-2xl shadow-lg border-4 border-white/20 shrink-0">

@@ -3,194 +3,45 @@ import { ChecklistItem, ExpenseItem, Trip } from '../types';
 export const DEFAULT_CHECKLIST: ChecklistItem[] = [
   // Islamic Items
   { id: 'chk-1', category: 'Islamic Items', text: 'Compact travel prayer mat (waterproof)', completed: true },
-  { id: 'chk-2', category: 'Islamic Items', text: 'Pocket Qur\'an or digital bookmarked app', completed: true },
+  { id: 'chk-2', category: 'Islamic Items', text: 'Pocket Qur\'an or bookmarked mobile app', completed: true },
   { id: 'chk-3', category: 'Islamic Items', text: 'Travel bidet / portable spray bottle (shattaf)', completed: true },
-  { id: 'chk-4', category: 'Islamic Items', text: 'Miswak / halal personal hygiene kit', completed: false },
+  { id: 'chk-4', category: 'Islamic Items', text: 'Miswak & halal personal hygiene kit', completed: false },
   { id: 'chk-5', category: 'Islamic Items', text: 'Dua booklet / saved travel supplications', completed: true },
 
-  // Documents
-  { id: 'chk-6', category: 'Documents', text: 'Passport with at least 6 months validity', completed: true },
-  { id: 'chk-7', category: 'Documents', text: 'Turkey e-Visa or visa exemption papers', completed: true },
-  { id: 'chk-8', category: 'Documents', text: 'Flight e-tickets & hotel booking confirmations', completed: true },
-  { id: 'chk-9', category: 'Documents', text: 'Travel medical insurance certificate', completed: false },
+  // Kerala Travel Documents & Identity
+  { id: 'chk-6', category: 'Documents', text: 'Aadhaar / Passport & Govt ID copies', completed: true },
+  { id: 'chk-7', category: 'Documents', text: 'Train / Flight tickets (Kochi / Calicut / Kannur)', completed: true },
+  { id: 'chk-8', category: 'Documents', text: 'Hotel / Resort & Houseboat booking vouchers', completed: true },
+  { id: 'chk-9', category: 'Documents', text: 'Driving license & vehicle papers (if renting cab/car)', completed: false },
 
-  // Clothing
-  { id: 'chk-10', category: 'Clothing', text: 'Modest breathable attire for historic mosques', completed: true },
-  { id: 'chk-11', category: 'Clothing', text: 'Slip-on comfortable shoes (easy removal at mosques)', completed: true },
-  { id: 'chk-12', category: 'Clothing', text: 'Light evening jacket / windbreaker for Bosphorus', completed: false },
-  { id: 'chk-13', category: 'Clothing', text: 'Extra clean socks (for carpeted prayer halls)', completed: true },
+  // Clothing & Weather
+  { id: 'chk-10', category: 'Clothing', text: 'Modest breathable cotton clothes for tropical Kerala weather', completed: true },
+  { id: 'chk-11', category: 'Clothing', text: 'Slip-on sandals / easy footwear for Kerala mosques', completed: true },
+  { id: 'chk-12', category: 'Clothing', text: 'Sturdy compact umbrella (for Kerala rains & sun)', completed: true },
+  { id: 'chk-13', category: 'Clothing', text: 'Light shawl / prayer cap (thoppi / hijab)', completed: true },
 
-  // Electronics
-  { id: 'chk-14', category: 'Electronics', text: 'High-capacity power bank (20,000 mAh)', completed: true },
-  { id: 'chk-15', category: 'Electronics', text: 'Universal travel plug adapter (EU Type C/F)', completed: true },
-  { id: 'chk-16', category: 'Electronics', text: 'Offline maps & Musafir app downloaded', completed: true },
+  // Electronics & Mobile
+  { id: 'chk-14', category: 'Electronics', text: 'Power bank (20,000 mAh) for day trips', completed: true },
+  { id: 'chk-15', category: 'Electronics', text: 'Mobile charger & car charging adapter', completed: true },
+  { id: 'chk-16', category: 'Electronics', text: 'Musafir Kerala app & offline maps saved', completed: true },
 
-  // Money
-  { id: 'chk-17', category: 'Money', text: 'Istanbulkart transport card & Turkish Lira (TRY)', completed: true },
-  { id: 'chk-18', category: 'Money', text: 'Zero forex fee international debit/credit cards', completed: false },
+  // Money & Payments
+  { id: 'chk-17', category: 'Money', text: 'UPI Apps active (Google Pay / PhonePe / Paytm)', completed: true },
+  { id: 'chk-18', category: 'Money', text: 'Emergency Indian Rupee cash (₹2,000 in smaller notes)', completed: false },
 
-  // Health
-  { id: 'chk-19', category: 'Health', text: 'Personal prescription medications & basic first-aid', completed: true },
-  { id: 'chk-20', category: 'Health', text: 'Hydration electrolyte tablets & lip balm', completed: false },
+  // Health & Refreshment
+  { id: 'chk-19', category: 'Health', text: 'Personal prescription medicines & first-aid', completed: true },
+  { id: 'chk-20', category: 'Health', text: 'Mosquito repellent cream (Odomos) & hydration salts', completed: false },
 ];
-
-export const DEMO_TRIP: Trip = {
-  id: 'trip-istanbul-5d',
-  title: 'Istanbul Heritage & Faith Journey',
-  destination: 'Istanbul, Türkiye',
-  startDate: '2026-10-12',
-  endDate: '2026-10-17',
-  budgetTotal: 1800,
-  currency: 'USD',
-  downloadedOffline: true,
-  notes: 'Stay at Sultanahmet near historic mosques. Combine Dhuhr & Asr when on Bosphorus cruise.',
-  days: [
-    {
-      dayNumber: 1,
-      title: 'Arrival & The Heart of Sultanahmet',
-      activities: [
-        {
-          id: 'act-1-1',
-          timeSlot: 'morning',
-          activity: 'Arrive at Istanbul Airport (IST), airport prayer room, transfer to Sultanahmet hotel.',
-          prayerNote: 'Fajr on arrival at Airport Terminal Mosque',
-          halalFoodSpot: 'Simit Sarayı at arrival lounge',
-        },
-        {
-          id: 'act-1-2',
-          timeSlot: 'afternoon',
-          activity: 'Visit Hagia Sophia Grand Mosque (Ayasofya-i Kebir) & Hippodrome Square.',
-          prayerNote: 'Dhuhr & Asr prayed inside Hagia Sophia',
-          halalFoodSpot: 'Tarihi Sultanahmet Köftecisi (100% Halal lamb/beef)',
-        },
-        {
-          id: 'act-1-3',
-          timeSlot: 'evening',
-          activity: 'Explore Sultanahmet Park fountains; sunset reflection at Blue Mosque.',
-          prayerNote: 'Maghrib & Isha at Sultanahmet (Blue Mosque)',
-          halalFoodSpot: 'Hafiz Mustafa 1864 for tea and kunafa',
-        },
-      ],
-    },
-    {
-      dayNumber: 2,
-      title: 'Ottoman Grandeur & Grand Bazaar',
-      activities: [
-        {
-          id: 'act-2-1',
-          timeSlot: 'morning',
-          activity: 'Tour Topkapı Palace & the Sacred Relics Pavilion (Holy Mantle of the Prophet ﷺ).',
-          prayerNote: 'Fajr at hotel with Qibla compass',
-          halalFoodSpot: 'Matbah Ottoman Palace Cuisine',
-        },
-        {
-          id: 'act-2-2',
-          timeSlot: 'afternoon',
-          activity: 'Walk through Grand Bazaar (Kapalıçarşı) and Sahaflar Book Bazaar.',
-          prayerNote: 'Dhuhr at Grand Bazaar Historic Prayer Hall (Kapalıçarşı Mescidi)',
-          halalFoodSpot: 'Şehzade Cağ Kebap (Wood-fired lamb)',
-        },
-        {
-          id: 'act-2-3',
-          timeSlot: 'evening',
-          activity: 'Bosphorus sunset stroll around Sirkeci and Eminönü Pier.',
-          prayerNote: 'Maghrib at Yeni Camii (New Mosque, Eminönü)',
-          halalFoodSpot: 'Halal grilled fish sandwich near Galata Bridge',
-        },
-      ],
-    },
-    {
-      dayNumber: 3,
-      title: 'Süleymaniye Splendor & Golden Horn',
-      activities: [
-        {
-          id: 'act-3-1',
-          timeSlot: 'morning',
-          activity: 'Climb up to Mimar Sinan’s masterpiece: Süleymaniye Mosque and gardens.',
-          prayerNote: 'Morning reflection in courtyard',
-          halalFoodSpot: 'Traditional kuru fasulye (white beans) near mosque gates',
-        },
-        {
-          id: 'act-3-2',
-          timeSlot: 'afternoon',
-          activity: 'Explore the Spice Bazaar (Mısır Çarşısı) and Rustem Pasha Mosque with exquisite Iznik tiles.',
-          prayerNote: 'Dhuhr & Asr at Rustem Pasha Mosque',
-          halalFoodSpot: 'Pandeli Restaurant (Eminönü)',
-        },
-        {
-          id: 'act-3-3',
-          timeSlot: 'evening',
-          activity: 'Take ferry across the Bosphorus to Üsküdar Asian side.',
-          prayerNote: 'Maghrib overlooking Maiden’s Tower (Kız Kulesi)',
-          halalFoodSpot: 'Çiya Sofrası in Kadıköy',
-        },
-      ],
-    },
-    {
-      dayNumber: 4,
-      title: 'Spiritual Eyüp Sultan & Pierre Loti',
-      activities: [
-        {
-          id: 'act-4-1',
-          timeSlot: 'morning',
-          activity: 'Visit sacred Eyüp Sultan Mosque (burial site of Abu Ayyub al-Ansari RA).',
-          prayerNote: 'Fajr & Morning Adhkar at Eyüp Sultan courtyard',
-          halalFoodSpot: 'Eyüp historic bakery & Turkish tea',
-        },
-        {
-          id: 'act-4-2',
-          timeSlot: 'afternoon',
-          activity: 'Cable car to Pierre Loti Hill overlooking Golden Horn panoramic vista.',
-          prayerNote: 'Dhuhr at Zal Mahmud Pasha Mosque',
-          halalFoodSpot: 'Panoramic cafe lunch (Alcohol-free)',
-        },
-        {
-          id: 'act-4-3',
-          timeSlot: 'evening',
-          activity: 'Taksim & Istiklal Street cultural walk; visit Taksim Grand Mosque.',
-          prayerNote: 'Maghrib & Isha at Taksim Mosque',
-          halalFoodSpot: 'Halal Turkish delight & Maraş dondurma',
-        },
-      ],
-    },
-    {
-      dayNumber: 5,
-      title: 'Ortaköy Waterfront & Departure Farewell',
-      activities: [
-        {
-          id: 'act-5-1',
-          timeSlot: 'morning',
-          activity: 'Morning visit to Bosphorus shores at Ortaköy Mosque for iconic photos.',
-          prayerNote: 'Duha prayer in Ortaköy Mosque',
-          halalFoodSpot: 'Famous Ortaköy baked kumpir (Halal verified)',
-        },
-        {
-          id: 'act-5-2',
-          timeSlot: 'afternoon',
-          activity: 'Last-minute souvenir shopping; pack luggage & check out.',
-          prayerNote: 'Dhuhr & Asr traveller prayers combined',
-          halalFoodSpot: 'Light farewell Turkish lunch',
-        },
-        {
-          id: 'act-5-3',
-          timeSlot: 'evening',
-          activity: 'Transfer to Istanbul Airport. Recite travel return supplication.',
-          prayerNote: 'Maghrib at IST Airport Mosque before departure',
-          halalFoodSpot: 'Airport halal cafe',
-        },
-      ],
-    },
-  ],
-};
 
 export const KERALA_TRIP: Trip = {
   id: 'trip-kerala-5d',
   title: 'Kerala Malabar Heritage & Faith Trail',
-  destination: 'Kochi & Kozhikode, Kerala, India',
+  destination: 'Kochi, Kodungallur, Ponnani & Kozhikode, Kerala',
   startDate: '2026-11-05',
   endDate: '2026-11-10',
-  budgetTotal: 1200,
-  currency: 'USD',
+  budgetTotal: 25000,
+  currency: 'INR',
   downloadedOffline: true,
   notes: 'Explore Cheraman Juma Masjid (India\'s oldest mosque, 629 CE), historic Kuttichira wooden mosque, world-famous Malabar Biryani, and serene backwaters.',
   days: [
@@ -250,55 +101,55 @@ export const KERALA_TRIP: Trip = {
     },
     {
       dayNumber: 3,
-      title: 'Journey to Kozhikode (Calicut) & Kuttichira Heritage',
+      title: 'Ponnani: The Little Mecca of Malabar & Fath al-Mu\'in',
       activities: [
         {
           id: 'kerala-3-1',
           timeSlot: 'morning',
-          activity: 'Scenic Vande Bharat express train from Kochi to Kozhikode (Calicut) through verdant palm groves.',
-          prayerNote: 'Duha traveller prayer while underway',
-          halalFoodSpot: 'Kerala railway pantry snacks & Sulaimani tea',
+          activity: 'Scenic journey to Ponnani, the centuries-old Islamic scholarship capital of Malabar.',
+          prayerNote: 'Fajr at hotel before departure',
+          halalFoodSpot: 'Idiyappam & Egg Roast in Guruvayur / Ponnani border',
         },
         {
           id: 'kerala-3-2',
           timeSlot: 'afternoon',
-          activity: 'Explore Kuttichira: visit the 14th-century wooden marvel Mishkal Mosque and Muchundi Mosque.',
-          prayerNote: 'Dhuhr & Asr at Mishkal Mosque courtyard pond',
-          halalFoodSpot: 'World-famous Kozhikode Dum Biryani at Paragon Restaurant',
+          activity: 'Pray at Ponnani Valiya Juma Masjid (built in 1519 CE by Sheikh Zaynuddin Makhdum I). View the historic scholar teaching lamp (Vilakkilirikkal).',
+          prayerNote: 'Dhuhr & Asr at Ponnani Valiya Juma Masjid',
+          halalFoodSpot: 'Ponnani beach fresh seafood & Ghee Rice',
         },
         {
           id: 'kerala-3-3',
           timeSlot: 'evening',
-          activity: 'Walk along Kozhikode Beach promenade; taste authentic Kozhikodan Halwa & salted mangoes.',
-          prayerNote: 'Maghrib at Beach Road Juma Masjid',
-          halalFoodSpot: 'Zains Malabar Traditional Cuisine (Chatti Pathiri & Unnakaya)',
+          activity: 'Visit historic Biyyam Kayal backwater park; watch sunset over Ponnani fishing harbour.',
+          prayerNote: 'Maghrib at Biyyam Kayal waterside masjid',
+          halalFoodSpot: 'Malabar evening snacks (Unnakaya, Chattipathiri & Sulaimani)',
         },
       ],
     },
     {
       dayNumber: 4,
-      title: 'Wayanad Mountain Mists & Spiritual Solitude',
+      title: 'Kozhikode: The Capital of Malabar Hospitality & Cuisine',
       activities: [
         {
           id: 'kerala-4-1',
           timeSlot: 'morning',
-          activity: 'Climb the Thamarassery Churam mountain pass into lush Wayanad highlands.',
-          prayerNote: 'Fajr in misty mountain masjid',
-          halalFoodSpot: 'Wayanad mountain tea estate breakfast',
+          activity: 'Arrive in Kozhikode (Calicut); visit Kuttichira heritage quarter and Mishkal Mosque (14th-century 4-tiered wooden mosque).',
+          prayerNote: 'Duha prayer in Mishkal Palli',
+          halalFoodSpot: 'Breakfast at Sagar Restaurant: Pathiri & Fish Curry',
         },
         {
           id: 'kerala-4-2',
           timeSlot: 'afternoon',
-          activity: 'Explore Banasura Sagar dam and serene bamboo forests; reflection on natural creation.',
-          prayerNote: 'Dhuhr & Asr combined traveller prayers at hilltop mosque',
-          halalFoodSpot: 'Wayanad traditional Halal bamboo biryani',
+          activity: 'Visit Muchundi Mosque with ancient Zamorin King stone decree; walk around Kuttichira ancient pond.',
+          prayerNote: 'Dhuhr & Asr combined at Muchundi Mosque',
+          halalFoodSpot: 'Paragon Restaurant (World-famous Kozhikode Chicken & Mutton Biryani)',
         },
         {
           id: 'kerala-4-3',
           timeSlot: 'evening',
-          activity: 'Sunset over Western Ghats; return to riverside retreat.',
-          prayerNote: 'Maghrib & Isha at The Raviz Kadavu prayer pavilion',
-          halalFoodSpot: 'Riverside Malabar barbecue dinner',
+          activity: 'Kozhikode Beach sunset walk; enjoy pickled fruits (Uppilittathu) and ice orathi.',
+          prayerNote: 'Maghrib at Kozhikode Beach Juma Masjid',
+          halalFoodSpot: 'Zain\'s Hotel for authentic home-style snacks & Rahmath Beef Biryani',
         },
       ],
     },
@@ -332,11 +183,14 @@ export const KERALA_TRIP: Trip = {
   ],
 };
 
+// Set DEMO_TRIP to KERALA_TRIP
+export const DEMO_TRIP: Trip = KERALA_TRIP;
+
 export const INITIAL_EXPENSES: ExpenseItem[] = [
-  { id: 'exp-1', tripId: 'trip-istanbul-5d', title: 'Hotel AJWA Sultanahmet (3 nights)', category: 'Hotel', amount: 480, currency: 'USD', date: '2026-10-12' },
-  { id: 'exp-2', tripId: 'trip-istanbul-5d', title: 'Airport Shuttle & Istanbulkart reload', category: 'Transport', amount: 35, currency: 'USD', date: '2026-10-12' },
-  { id: 'exp-3', tripId: 'trip-istanbul-5d', title: 'Dinner at Tarihi Sultanahmet Köftecisi', category: 'Food', amount: 28, currency: 'USD', date: '2026-10-12' },
-  { id: 'exp-4', tripId: 'trip-istanbul-5d', title: 'Topkapı Palace & Sacred Relics tickets', category: 'Tickets', amount: 45, currency: 'USD', date: '2026-10-13' },
-  { id: 'exp-5', tripId: 'trip-istanbul-5d', title: 'Baklava & Turkish Delight gifts', category: 'Shopping', amount: 62, currency: 'USD', date: '2026-10-13' },
-  { id: 'exp-6', tripId: 'trip-istanbul-5d', title: 'Lunch at Şehzade Cağ Kebap', category: 'Food', amount: 32, currency: 'USD', date: '2026-10-14' },
+  { id: 'exp-1', tripId: 'trip-kerala-5d', title: 'The Raviz Kadavu Resort (2 nights)', category: 'Hotel', amount: 8500, currency: 'INR', date: '2026-11-05' },
+  { id: 'exp-2', tripId: 'trip-kerala-5d', title: 'Airport Taxi (Kochi to Fort Kochi)', category: 'Transport', amount: 1200, currency: 'INR', date: '2026-11-05' },
+  { id: 'exp-3', tripId: 'trip-kerala-5d', title: 'Dinner at Paragon Restaurant (Biryani & Fish)', category: 'Food', amount: 950, currency: 'INR', date: '2026-11-05' },
+  { id: 'exp-4', tripId: 'trip-kerala-5d', title: 'Cheraman Mosque & Muziris Heritage Tour', category: 'Tickets', amount: 400, currency: 'INR', date: '2026-11-06' },
+  { id: 'exp-5', tripId: 'trip-kerala-5d', title: 'Kozhikode Halwa & Malabar Spices', category: 'Shopping', amount: 1800, currency: 'INR', date: '2026-11-07' },
+  { id: 'exp-6', tripId: 'trip-kerala-5d', title: 'Lunch at Rahmath Restaurant (Beef Biryani)', category: 'Food', amount: 650, currency: 'INR', date: '2026-11-08' },
 ];
