@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import { generateLocalItinerary as buildComprehensiveLocalItinerary } from './src/services/localItineraries.js';
 
 dotenv.config();
 
@@ -127,19 +128,39 @@ Whenever the user asks about travelling rulings, prayer concessions (Qasr / เด–เ
       { role: 'user', parts: [{ text: message }] },
     ];
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.3,
-      },
-    });
+    let responseText = '';
+    let modelUsed = 'gemini-3.1-flash-lite';
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-lite',
+        contents,
+        config: {
+          systemInstruction,
+          temperature: 0.3,
+        },
+      });
+      responseText = response.text || '';
+    } catch (modelErr: any) {
+      console.warn('gemini-3.1-flash-lite failed in /api/chat, trying gemini-3.8-flash:', modelErr?.message || modelErr);
+      const response2 = await ai.models.generateContent({
+        model: 'gemini-3.8-flash',
+        contents,
+        config: {
+          systemInstruction,
+          temperature: 0.3,
+        },
+      });
+      responseText = response2.text || '';
+      modelUsed = 'gemini-3.8-flash';
+    }
 
-    const responseText = response.text || 'I could not generate a response. Please try again.';
+    if (!responseText) {
+      responseText = generateLocalAssistantResponse(message, userLocation, detectedLang);
+    }
+
     res.json({
       text: responseText,
-      source: 'gemini-3.8-flash (Fath al-Mu\'in & Kanz al-Raghibin Scholar Engine)',
+      source: `${modelUsed} (Fath al-Mu'in & Kanz al-Raghibin Scholar Engine)`,
       language: detectedLang,
       disclaimer:
         detectedLang === 'ml'
@@ -350,30 +371,55 @@ Return strictly valid JSON with this exact structure:
   ]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.3,
-      },
-    });
+    let parsedPlan: any = null;
+    let modelSource = 'gemini-3.1-flash-lite';
 
     try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-lite',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.3,
+        },
+      });
+
       const parsed = JSON.parse(response.text || '{}');
       if (parsed && Array.isArray(parsed.days) && parsed.days.length > 0) {
-        res.json({ plan: parsed, source: 'gemini-3.8-flash', language: targetLang });
-        return;
+        parsedPlan = parsed;
       }
-      throw new Error('Invalid JSON structure from AI model');
-    } catch {
-      const fallback = generateLocalItinerary(destination, numDays, interests, targetLang, budget, travelStyle);
-      res.json({
-        plan: fallback,
-        source: 'local-itinerary-curator-fallback',
-        language: targetLang,
-      });
+    } catch (liteErr: any) {
+      console.warn('gemini-3.1-flash-lite failed in /api/generate-itinerary, trying gemini-3.8-flash:', liteErr?.message || liteErr);
+      try {
+        const response2 = await ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0.3,
+          },
+        });
+        const parsed2 = JSON.parse(response2.text || '{}');
+        if (parsed2 && Array.isArray(parsed2.days) && parsed2.days.length > 0) {
+          parsedPlan = parsed2;
+          modelSource = 'gemini-3.8-flash';
+        }
+      } catch (flashErr: any) {
+        console.warn('Both Gemini models failed, proceeding to comprehensive local curator:', flashErr?.message || flashErr);
+      }
     }
+
+    if (parsedPlan && Array.isArray(parsedPlan.days) && parsedPlan.days.length > 0) {
+      res.json({ plan: parsedPlan, source: modelSource, language: targetLang });
+      return;
+    }
+
+    const fallback = generateLocalItinerary(destination, numDays, interests, targetLang, budget, travelStyle);
+    res.json({
+      plan: fallback,
+      source: 'local-itinerary-curator-fallback',
+      language: targetLang,
+    });
   } catch (error) {
     console.error('Error generating itinerary in /api/generate-itinerary:', error);
     const numDays = Math.min(Math.max(Number(req.body.days) || 3, 1), 10);
@@ -877,6 +923,7 @@ function generateLocalItinerary(
   budget: string = '$500 - $800',
   travelStyle: string = 'Balanced History & Culinary'
 ) {
+  return buildComprehensiveLocalItinerary(destination, days, interests, lang, budget, travelStyle);
   const destLower = destination.toLowerCase();
   const maxDays = Math.min(Math.max(days, 1), 10);
 

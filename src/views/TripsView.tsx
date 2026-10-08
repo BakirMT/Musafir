@@ -87,6 +87,8 @@ export const TripsView: React.FC = () => {
   const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState<string>('');
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generatedToast, setGeneratedToast] = useState<string | null>(null);
   const [downloadSuccessToast, setDownloadSuccessToast] = useState(false);
   const [copiedToast, setCopiedToast] = useState(false);
 
@@ -111,24 +113,26 @@ export const TripsView: React.FC = () => {
   // Handle AI generation
   const handleGenerateItinerary = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!destInput.trim()) return;
     setGenerating(true);
+    setGenerationError(null);
     setGenerationStep('Connecting with Musafir AI Jurisprudence & Travel Engine...');
 
     try {
       const stepTimer1 = setTimeout(() => {
         setGenerationStep('Mapping 5 daily Salah windows and congregational mosques...');
-      }, 900);
+      }, 700);
 
       const stepTimer2 = setTimeout(() => {
         setGenerationStep('Curating verified Halal dining and Shafi\'i travel concessions...');
-      }, 1800);
+      }, 1500);
 
       const response = await fetch('/api/generate-itinerary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          destination: destInput,
-          country: countryInput,
+          destination: destInput.trim(),
+          country: countryInput.trim(),
           days: daysInput,
           budget: budgetInput,
           travelStyle: styleInput,
@@ -140,6 +144,10 @@ export const TripsView: React.FC = () => {
 
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
+
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP ${response.status}`);
+      }
 
       const data = await response.json();
       if (data.plan && Array.isArray(data.plan.days) && data.plan.days.length > 0) {
@@ -204,7 +212,8 @@ export const TripsView: React.FC = () => {
           };
         });
 
-        const newTripId = `trip-${destInput.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+        const cleanDest = destInput.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+        const newTripId = `trip-${cleanDest}-${Date.now()}`;
         const newTrip: Trip = {
           id: newTripId,
           title: data.plan.tripTitle || `${daysInput}-Day Muslim Journey to ${destInput}`,
@@ -228,9 +237,14 @@ export const TripsView: React.FC = () => {
         updateTrip(newTrip);
         setActiveDayTab(1);
         setAiGeneratorOpen(false);
+        setGeneratedToast(`✨ Generated ${newDays.length}-Day Itinerary for ${destInput}!`);
+        setTimeout(() => setGeneratedToast(null), 5000);
+      } else {
+        throw new Error('Received invalid itinerary format from engine');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to generate AI itinerary:', err);
+      setGenerationError(err?.message || 'Could not generate itinerary. Please try again.');
     } finally {
       setGenerating(false);
       setGenerationStep('');
@@ -377,6 +391,23 @@ export const TripsView: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-in fade-in duration-200">
+      {/* Itinerary Generated Toast */}
+      {generatedToast && (
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-[#0F5C4D] text-white text-xs font-bold flex items-center justify-between shadow-lg shadow-emerald-900/20 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <Check className="w-4 h-4 text-[#F2D785]" />
+            <span>{generatedToast}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setGeneratedToast(null)}
+            className="p-1 hover:bg-white/10 rounded-full"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Trip Switcher Pills & Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -1105,6 +1136,20 @@ export const TripsView: React.FC = () => {
                   <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
                     <div className="bg-[#0F5C4D] h-full w-2/3 animate-pulse rounded-full" />
                   </div>
+                </div>
+              )}
+
+              {/* Error Message if Generation Failed */}
+              {generationError && (
+                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-400 text-xs font-semibold flex items-center justify-between gap-2">
+                  <span>{generationError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setGenerationError(null)}
+                    className="p-1 hover:bg-red-500/10 rounded-full"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 

@@ -449,7 +449,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateTrip = (updated: Trip) => {
-    setTrips((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    setTrips((prev) => {
+      const exists = prev.some((t) => t.id === updated.id);
+      if (exists) {
+        return prev.map((t) => (t.id === updated.id ? updated : t));
+      }
+      return [updated, ...prev];
+    });
   };
 
   const addExpense = (expense: Omit<ExpenseItem, 'id'>) => {
